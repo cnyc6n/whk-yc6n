@@ -74,7 +74,6 @@ const DebugPanel = {
         this._armed = true;
         this._armedAt = Date.now();
         this._progress = [];
-        this._showHint();
         clearTimeout(this._timer);
         this._timer = setTimeout(() => this._disarm(), this.WINDOW_MS);
     },
@@ -90,7 +89,6 @@ const DebugPanel = {
         if (key === expect) {
             this._progress.push(key);
             e.preventDefault();
-            this._updateHint();
 
             if (this._progress.length === this.SECRET.length) {
                 // 全中
@@ -98,14 +96,9 @@ const DebugPanel = {
                 this.open();
             }
         } else {
-            // 输错：不立刻取消，而是在剩余窗口内重新开始匹配。
-            // 这样手滑多按一下不会让用户以为面板坏了（3 秒窗口仍然生效）。
-            if (key === this.SECRET[0]) {
-                this._progress = [key];
-            } else {
-                this._progress = [];
-            }
-            this._updateHint();
+            // 输错即作废：立刻取消，必须重新按 D 开始。
+            // （这是开发者工具，宽松匹配没有必要，严格更可预期。）
+            this._disarm();
         }
     },
 
@@ -114,44 +107,6 @@ const DebugPanel = {
         this._progress = [];
         clearTimeout(this._timer);
         this._timer = null;
-        this._hideHint();
-    },
-
-    // ============================================================
-    // 倒计时提示（让用户知道窗口开着）
-    // ============================================================
-    _ensureHintEl() {
-        let el = document.getElementById('dbg-secret-hint');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'dbg-secret-hint';
-            el.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(el);
-        }
-        return el;
-    },
-
-    _showHint() {
-        const el = this._ensureHintEl();
-        el.className = 'dbg-hint visible';
-        this._updateHint();
-    },
-
-    _updateHint() {
-        const el = this._ensureHintEl();
-        const total = this.SECRET.length;
-        const filled = this._progress.length;
-        const dots = '●'.repeat(filled) + '○'.repeat(total - filled);
-        const left = Math.max(0, this.WINDOW_MS - (Date.now() - this._armedAt));
-        el.innerHTML =
-            `<span class="dbg-hint-label">口令</span>` +
-            `<span class="dbg-hint-dots">${dots}</span>` +
-            `<span class="dbg-hint-time">${(left / 1000).toFixed(1)}s</span>`;
-    },
-
-    _hideHint() {
-        const el = document.getElementById('dbg-secret-hint');
-        if (el) el.className = 'dbg-hint';
     },
 
     // ============================================================
@@ -168,6 +123,10 @@ const DebugPanel = {
         el.innerHTML = this.render();
         el.classList.remove('hidden');
         this._open = true;
+        // 首次打开时必须主动渲染默认标签页的内容，
+        // 否则 #dbg-body 是空的，要切一次标签才出现。
+        this._tab = this._tab || 'res';
+        this.renderBody();
         this.refreshLive();
     },
 

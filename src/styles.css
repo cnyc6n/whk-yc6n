@@ -448,29 +448,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* ---- 暗号输入提示 ---- */
-.dbg-hint {
-    position: fixed;
-    bottom: 22px;
-    right: 22px;
-    z-index: 99999;
-    display: none;
-    align-items: center;
-    gap: 10px;
-    background: var(--btn-primary);
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 24px;
-    font-size: .85em;
-    box-shadow: 0 4px 14px rgba(0,0,0,.3);
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-}
-.dbg-hint.visible { display: flex; }
-.dbg-hint-dots { letter-spacing: 4px; color: var(--btn-accent); }
-.dbg-hint-label { opacity: .85; }
-.dbg-hint-time { opacity: .65; font-size: .9em; }
-
 @media (max-width: 600px) {
     .dbg-row > label { min-width: 58px; }
     .dbg-num { width: 88px; }
