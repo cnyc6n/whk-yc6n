@@ -201,10 +201,14 @@ const Game = {
             return alert("已经毕业啦！");
         }
 
+        // BUG-6 修复：用独立布尔标志表达「无限 AP」，不再把 ap 污染成字符串 'INF'。
+        // State.unlimitedAp 缺失（老存档）时按 false 处理，行为与修复前完全一致。
+        const infiniteAp = State.unlimitedAp === true;
+
         // ===== 勤工俭学 =====
         if (cat === 'work' && sub === 'earn') {
-            if (State.ap < 1) return alert("AP不足！");
-            State.ap -= 1;
+            if (!infiniteAp && State.ap < 1) return alert("AP不足！");
+            if (!infiniteAp) State.ap -= 1;
             State.money += 1000;
             this.log("💼 勤工俭学，赚取 ¥1000", "[资金]");
             UI.hideAllMenus();
@@ -214,8 +218,9 @@ const Game = {
         }
 
         if (cat === 'eff') {
-            if (State.money < 1500 || State.ap < 1) return alert("资源不足！");
-            State.money -= 1500; State.ap -= 1;
+            if (State.money < 1500 || (!infiniteAp && State.ap < 1)) return alert("资源不足！");
+            State.money -= 1500;
+            if (!infiniteAp) State.ap -= 1;
             State.students.forEach(s => {
                 if (sub === 'arts') s.effArts = Math.min(1.5, s.effArts + 0.08);
                 if (sub === 'sci') s.effSci = Math.min(1.5, s.effSci + 0.08);
@@ -227,12 +232,12 @@ const Game = {
             return;
         }
 
-        if (State.ap < 1) return alert("AP不足！");
+        if (!infiniteAp && State.ap < 1) return alert("AP不足！");
         let costAP = cat === 'train' ? 2 : (cat === 'intensive' ? 3 : 1);
         let costMoney = cat === 'train' ? 2000 : cat === 'intensive' ? 3000 : cat === 'test' ? 500 : (cat === 'rest' && sub === 'snack' ? 400 : (cat === 'rest' && sub === 'movie' ? 500 : 0));
-        if (State.ap < costAP) return alert("AP不足！");
+        if (!infiniteAp && State.ap < costAP) return alert("AP不足！");
         if (State.money < costMoney) return alert("班费不足！");
-        State.ap -= costAP;
+        if (!infiniteAp) State.ap -= costAP;
         if (costMoney > 0) State.money -= costMoney;
 
         const techBonus = 1 + (State.fac.tech * 0.15);
@@ -314,8 +319,9 @@ const Game = {
             this.updateUI();
             return;
         }
-        if (State.money < 2500 || State.ap < 2) return alert("资源不足！");
-        State.money -= 2500; State.ap -= 2;
+        if (State.money < 2500 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 2500;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.students.forEach(s => {
             s.stress = 0;
             s.mood = Math.min(100, s.mood + 20);
@@ -329,8 +335,9 @@ const Game = {
 
     doMockExam() {
         if (State.isGraduated) return alert("已经毕业啦！");
-        if (State.money < 4000 || State.ap < 2) return alert("资源不足！");
-        State.money -= 4000; State.ap -= 2;
+        if (State.money < 4000 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 4000;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.isMockExam = true;
         this.log("全真模拟考！", "[实战]");
         this.prepareExam("模拟考试", true);
@@ -529,6 +536,36 @@ const Game = {
 
     finishTurnLogic() {
         if (State.isGraduated) return;
+
+        // ===== 事件冷却递减（BUG-3 修复）=====
+        // 时序推理（位置：本函数开头，且必须早于下方 60% 触发判定）：
+        //   1) 冷却只在「成功触发某个事件」时置为 3（见 triggerEnhancedEvent）。
+        //   2) 第 N 回合触发（cd=3）后：
+        //        N+1 回合开头减到 2 → 过滤时 2 为真值 → 禁用
+        //        N+2 回合开头减到 1 → 过滤时 1 为真值 → 禁用
+        //        N+3 回合开头减到 0 → delete，本回合的触发判定里已重新可选
+        //      即「触发后隔 3 个回合可再次抽中」，事件系统不会再永久枯竭。
+        //      注：严格被整回合禁用的是 N+1、N+2 两个回合，N+3 即恢复 ——
+        //      这是把递减放在「判定之前」的必然结果，与「放到判定之后（函数末尾）」
+        //      只差一回合，语义在同一量级，不改。
+        //   3) 为什么不挪到 nextTurn() 开头：
+        //      nextTurn 的 week===2 分支只弹周考面板然后 return，要等用户点
+        //      confirmWeekly() 才结算；若用户没分配完点数，confirmWeekly 会
+        //      alert 后 return（不结算），此时「已递减但未结算」就错位了。
+        //      放在 finishTurnLogic 开头能保证「递减」与「结算+触发判定」严格同批次。
+        //   4) 月末考试周（nextTurn 的 week>4 分支，月考/高考）直接 return，
+        //      不调用 finishTurnLogic，因此该周不递减。但该周同样不会触发事件
+        //      （60% 触发判定就写在 finishTurnLogic 里），所以只会让恢复慢 1 个回合，
+        //      绝不会重新出现「13 个事件全部点完后永久枯竭」的原 BUG。属可接受取舍。
+        //   5) 降到 0 时 delete 键，避免 eventCooldowns 里堆积 0 值键
+        //      （虽然 0 是 falsy 也能通过过滤，但残留键会让调试面板/存档出现脏数据）。
+        if (!State.eventCooldowns) State.eventCooldowns = {}; // 老存档兜底
+        Object.keys(State.eventCooldowns).forEach(k => {
+            const next = (Number(State.eventCooldowns[k]) || 0) - 1;
+            if (next <= 0) delete State.eventCooldowns[k];
+            else State.eventCooldowns[k] = next;
+        });
+
         State.ap = State.maxAp;
         // ===== 经济修改：按难度 =====
         let income = 1000; // 默认普通
@@ -643,8 +680,22 @@ const Game = {
     },
 
     updateWeather() {
-        State.season = SEASONS[State.month.toString()];
-        State.weather = WEATHER_POOL[State.season][Math.floor(Math.random() * WEATHER_POOL[State.season].length)];
+        // BUG-5 修复：SEASONS 只配置了 8~6 月共 11 个键，没有 '7'。
+        // 调试面板的月份输入是 1..12（7 是合法输入），month=0/13 等越界值也可能被存档导入带进来，
+        // 此时 SEASONS[...] 为 undefined → WEATHER_POOL[undefined].length 抛 TypeError。
+        // 这里做两级兜底：季节回退到 '秋'，天气数组为空时再回退到默认天气对象。
+        // 注意：不改 config.js（那是另一个队员的文件），只在 game.js 内防御。
+        const DEFAULT_WEATHER = { i: '☀️', n: '晴朗', eff: '' };
+        const key = String(State.month);
+        let season = SEASONS[key];
+        if (!season) season = SEASONS['8'] || '秋'; // 未知月份统一回退到 8 月所属的「秋」
+        State.season = season;
+        const pool = WEATHER_POOL[season];
+        if (!pool || pool.length === 0) {
+            State.weather = DEFAULT_WEATHER; // 万一天气池没配置该季节，也不能崩
+        } else {
+            State.weather = pool[Math.floor(Math.random() * pool.length)];
+        }
     },
 
     getRealRank(score) {
@@ -923,7 +974,12 @@ const Game = {
 
     returnToClass() {
         document.getElementById('ending-modal').classList.add('hidden');
-        State.ap = 'INF';
+        // BUG-6 修复：原来写 State.ap = 'INF'（字符串），
+        // 会导致 'INF' - costAP === NaN 且被 JSON.stringify 原样落盘成 "ap": "INF"。
+        // 改为独立布尔标志 unlimitedAp，ap 始终保持数字（存档自洽）。
+        // 老存档没有该字段时，所有读取处都用 === true 判断，缺失即按 false 处理。
+        State.unlimitedAp = true;
+        State.ap = State.maxAp;
         document.getElementById('ui-ap').innerText = 'INF';
         document.getElementById('ap-max-txt').innerText = '';
         document.getElementById('btn-next-turn').innerText = '已毕业 🎓';

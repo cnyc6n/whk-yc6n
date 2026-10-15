@@ -2,6 +2,20 @@
 // 完整 JavaScript 代码 (修改版)
 // ============================================================
 
+// ===== 学生状态统一钳制（防止事件把数值刷出合法范围） =====
+// 压力/心情：0-100；各科成绩：0 ~ 该科满分 cap。
+// 所有会改动学生数值的入口都应调用它，避免「钳了压力心情、漏了成绩」。
+function clampStudentState(s) {
+    if (!s) return;
+    s.stress = Math.max(0, Math.min(100, s.stress || 0));
+    s.mood = Math.max(0, Math.min(100, s.mood || 0));
+    if (!s.mastery) s.mastery = {};
+    CONFIG.SUBJECTS.forEach(sub => {
+        const v = s.mastery[sub.id] || 0;
+        s.mastery[sub.id] = Math.max(0, Math.min(sub.cap, v));
+    });
+}
+
 // ===== UI 对象（不变） =====
 const UI = {
     toggleTheme() {
@@ -240,6 +254,17 @@ const UI = {
         const ev = window._currentEvent;
         const opt = window._currentOptions[idx];
         if (!opt.available) return;
+        // ===== 余额兜底：钱/AP 不够就不执行该选项，避免扣成负数 =====
+        if (opt.cost && State.money < opt.cost) {
+            Game.log(`班费不足（需要 ¥${opt.cost}，当前 ¥${State.money}），无法选择「${opt.text}」`, "[事件]");
+            alert(`班费不足！需要 ¥${opt.cost}，当前只有 ¥${State.money}`);
+            return;
+        }
+        if (opt.costAP && State.ap < opt.costAP) {
+            Game.log(`AP 不足（需要 ${opt.costAP}AP，当前 ${State.ap}），无法选择「${opt.text}」`, "[事件]");
+            alert(`AP 不足！需要 ${opt.costAP}AP，当前只有 ${State.ap}`);
+            return;
+        }
         let effectDesc = '';
         if (opt.cost) { State.money -= opt.cost; effectDesc += `花费 ¥${opt.cost}；`; }
         if (opt.costAP) { State.ap -= opt.costAP; effectDesc += `消耗 ${opt.costAP}AP；`; }
@@ -251,23 +276,21 @@ const UI = {
                     const oldStress = target.stress;
                     const oldMood = target.mood;
                     fn(target);
-                    // ===== 钳制压力与心情 =====
-                    target.stress = Math.max(0, Math.min(100, target.stress));
-                    target.mood = Math.max(0, Math.min(100, target.mood));
+                    // ===== 钳制压力、心情与各科成绩 =====
+                    clampStudentState(target);
                     const stressChange = target.stress - oldStress;
                     const moodChange = target.mood - oldMood;
                     effectDesc += `影响学生 ${target.name}：压力${stressChange >= 0 ? '+' : ''}${Math.round(stressChange)}%，心情${moodChange >= 0 ? '+' : ''}${Math.round(moodChange)}%`;
                 }
             } else {
                 fn();
-                // ===== 全班钳制 =====
-                State.students.forEach(st => {
-                    st.stress = Math.max(0, Math.min(100, st.stress));
-                    st.mood = Math.max(0, Math.min(100, st.mood));
-                });
+                // ===== 全班钳制（压力/心情/成绩） =====
+                State.students.forEach(st => clampStudentState(st));
                 effectDesc += '全班受到影响';
             }
         }
+        // ===== 兜底：任何 effect 内部私自扣钱也不允许出现负班费 =====
+        State.money = Math.max(0, State.money);
         Game.log(`事件【${ev.title}】已处理：${effectDesc}`, "[事件]");
         UI.closeModal('event-system-modal');
         Game.updateUI();

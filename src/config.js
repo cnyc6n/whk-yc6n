@@ -65,12 +65,12 @@ const CONFIG = {
         ] },
         { id: 'ev4', title: '📧 家长投诉', desc: '家长群里有人发长文吐槽作业太多...', options: [
             { text: '公开回应，安抚家长', effect: () => { State.students.forEach(s => { s.stress += 10; s.mood -= 5; }); } },
-            { text: '召开线上家长会', effect: () => { State.money -= 200; State.students.forEach(s => { s.mood += 5; s.stress -= 5; }); } },
+            { text: '召开线上家长会 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: () => { State.students.forEach(s => { s.mood += 5; s.stress -= 5; }); } },
             { text: '减少作业量 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 10; }); } }
         ] },
         { id: 'ev5', title: '🏆 竞赛获奖', desc: '某位同学在学科竞赛中获奖，全班振奋！', options: [
             { text: '全校表扬，树立榜样', effect: (s) => { s.mood += 25; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_comp')) { s.talents.push({ id: 't_comp', n: '竞赛达人', t: 'pos', d: '理科效率+10%' }); } } },
-            { text: '发放奖金鼓励', effect: (s) => { s.mood += 15; State.money -= 500; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
+            { text: '发放奖金鼓励 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.mood += 15; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
         ] },
         { id: 'ev6', title: '🤒 生病请假', desc: '换季流感，某位同学高烧缺席了本周课程。', options: [
             { text: '让他好好休息', effect: (s) => { s.sickTimer = 2; s.stress -= 15; } },

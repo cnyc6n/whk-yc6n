@@ -783,6 +783,20 @@
 // 完整 JavaScript 代码 (修改版)
 // ============================================================
 
+// ===== 学生状态统一钳制（防止事件把数值刷出合法范围） =====
+// 压力/心情：0-100；各科成绩：0 ~ 该科满分 cap。
+// 所有会改动学生数值的入口都应调用它，避免「钳了压力心情、漏了成绩」。
+function clampStudentState(s) {
+    if (!s) return;
+    s.stress = Math.max(0, Math.min(100, s.stress || 0));
+    s.mood = Math.max(0, Math.min(100, s.mood || 0));
+    if (!s.mastery) s.mastery = {};
+    CONFIG.SUBJECTS.forEach(sub => {
+        const v = s.mastery[sub.id] || 0;
+        s.mastery[sub.id] = Math.max(0, Math.min(sub.cap, v));
+    });
+}
+
 // ===== UI 对象（不变） =====
 const UI = {
     toggleTheme() {
@@ -1021,6 +1035,17 @@ const UI = {
         const ev = window._currentEvent;
         const opt = window._currentOptions[idx];
         if (!opt.available) return;
+        // ===== 余额兜底：钱/AP 不够就不执行该选项，避免扣成负数 =====
+        if (opt.cost && State.money < opt.cost) {
+            Game.log(`班费不足（需要 ¥${opt.cost}，当前 ¥${State.money}），无法选择「${opt.text}」`, "[事件]");
+            alert(`班费不足！需要 ¥${opt.cost}，当前只有 ¥${State.money}`);
+            return;
+        }
+        if (opt.costAP && State.ap < opt.costAP) {
+            Game.log(`AP 不足（需要 ${opt.costAP}AP，当前 ${State.ap}），无法选择「${opt.text}」`, "[事件]");
+            alert(`AP 不足！需要 ${opt.costAP}AP，当前只有 ${State.ap}`);
+            return;
+        }
         let effectDesc = '';
         if (opt.cost) { State.money -= opt.cost; effectDesc += `花费 ¥${opt.cost}；`; }
         if (opt.costAP) { State.ap -= opt.costAP; effectDesc += `消耗 ${opt.costAP}AP；`; }
@@ -1032,23 +1057,21 @@ const UI = {
                     const oldStress = target.stress;
                     const oldMood = target.mood;
                     fn(target);
-                    // ===== 钳制压力与心情 =====
-                    target.stress = Math.max(0, Math.min(100, target.stress));
-                    target.mood = Math.max(0, Math.min(100, target.mood));
+                    // ===== 钳制压力、心情与各科成绩 =====
+                    clampStudentState(target);
                     const stressChange = target.stress - oldStress;
                     const moodChange = target.mood - oldMood;
                     effectDesc += `影响学生 ${target.name}：压力${stressChange >= 0 ? '+' : ''}${Math.round(stressChange)}%，心情${moodChange >= 0 ? '+' : ''}${Math.round(moodChange)}%`;
                 }
             } else {
                 fn();
-                // ===== 全班钳制 =====
-                State.students.forEach(st => {
-                    st.stress = Math.max(0, Math.min(100, st.stress));
-                    st.mood = Math.max(0, Math.min(100, st.mood));
-                });
+                // ===== 全班钳制（压力/心情/成绩） =====
+                State.students.forEach(st => clampStudentState(st));
                 effectDesc += '全班受到影响';
             }
         }
+        // ===== 兜底：任何 effect 内部私自扣钱也不允许出现负班费 =====
+        State.money = Math.max(0, State.money);
         Game.log(`事件【${ev.title}】已处理：${effectDesc}`, "[事件]");
         UI.closeModal('event-system-modal');
         Game.updateUI();
@@ -1125,12 +1148,12 @@ const CONFIG = {
         ] },
         { id: 'ev4', title: '📧 家长投诉', desc: '家长群里有人发长文吐槽作业太多...', options: [
             { text: '公开回应，安抚家长', effect: () => { State.students.forEach(s => { s.stress += 10; s.mood -= 5; }); } },
-            { text: '召开线上家长会', effect: () => { State.money -= 200; State.students.forEach(s => { s.mood += 5; s.stress -= 5; }); } },
+            { text: '召开线上家长会 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: () => { State.students.forEach(s => { s.mood += 5; s.stress -= 5; }); } },
             { text: '减少作业量 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 10; }); } }
         ] },
         { id: 'ev5', title: '🏆 竞赛获奖', desc: '某位同学在学科竞赛中获奖，全班振奋！', options: [
             { text: '全校表扬，树立榜样', effect: (s) => { s.mood += 25; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_comp')) { s.talents.push({ id: 't_comp', n: '竞赛达人', t: 'pos', d: '理科效率+10%' }); } } },
-            { text: '发放奖金鼓励', effect: (s) => { s.mood += 15; State.money -= 500; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
+            { text: '发放奖金鼓励 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.mood += 15; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
         ] },
         { id: 'ev6', title: '🤒 生病请假', desc: '换季流感，某位同学高烧缺席了本周课程。', options: [
             { text: '让他好好休息', effect: (s) => { s.sickTimer = 2; s.stress -= 15; } },
@@ -1206,7 +1229,9 @@ const WEATHER_POOL = {
 // state.js
 // ============================================================
 // ===== 状态 =====
-let State = {
+
+// 标准状态模板：初始状态与老存档补齐共用这一份来源，避免两处各自漂移
+const DEFAULT_STATE = {
     week: 1, month: 8, year: 2025, money: 0, ap: 3, maxAp: 3,
     diff: 'normal', mode: 'normal', isGraduated: false, isMockExam: false,
     weather: { i: '☀️', n: '晴朗', eff: '' }, season: '秋',
@@ -1217,39 +1242,87 @@ let State = {
     monthStartScores: []
 };
 
+// 学生默认形状（与 game.js 中 startGame 生成的学生字段保持一致）
+const DEFAULT_STUDENT = {
+    name: '',
+    status: 'normal',
+    stress: 0,
+    sickTimer: 0,
+    mood: 60,
+    continuousGood: 0,
+    history: { scores: [], ranks: [] },
+    talents: [],
+    mastery: {},
+    effArts: 1.0,
+    effSci: 1.0,
+    birthdayMonth: 0,
+    skipStudy: false
+};
+
+// 初始状态由模板深拷贝而来（两者永不漂移）
+let State = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
 function saveGame() {
     try { if (State.students && State.students.length > 0) localStorage.setItem('whk_save_v2', JSON.stringify(State)); } catch (e) {}
 }
 
+// 把一份存档合并成"完整的 State 形状"：老存档缺什么就补什么，
+// 已有的数值原样保留（不会被默认值覆盖）。纯函数，方便出错时单独排查。
+function migrateSave(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new Error('存档内容不是有效的对象');
+    }
+    const merged = Object.assign({}, DEFAULT_STATE, raw);
+    // 嵌套对象必须逐层合并：顶层 Object.assign 是浅拷贝，raw 里缺失的嵌套字段
+    // 会整体退回默认值，而缺失的子字段（如老存档的 fac.psy）也要在这里补齐
+    merged.weather = Object.assign({}, DEFAULT_STATE.weather, merged.weather || {});
+    merged.fac = Object.assign({}, DEFAULT_STATE.fac, merged.fac || {});
+    merged.tempAlloc = Object.assign({}, merged.tempAlloc || {});
+    merged.eventCooldowns = Object.assign({}, merged.eventCooldowns || {});
+    merged.birthdayTriggered = Object.assign({}, merged.birthdayTriggered || {});
+    merged.monthStartScores = Array.isArray(merged.monthStartScores) ? merged.monthStartScores : [];
+    merged.students = Array.isArray(merged.students) ? merged.students : [];
+
+    merged.students = merged.students.map(st => {
+        const s = Object.assign({}, DEFAULT_STUDENT, st || {});
+        s.history = Object.assign({}, DEFAULT_STUDENT.history, s.history || {});
+        s.history.scores = Array.isArray(s.history.scores) ? s.history.scores : [];
+        s.history.ranks = Array.isArray(s.history.ranks) ? s.history.ranks : [];
+        s.mastery = Object.assign({}, s.mastery || {});
+        // 六个科目 key 必须都在，缺失的补 0（老存档可能缺整块 mastery）
+        if (typeof CONFIG !== 'undefined' && CONFIG.SUBJECTS) {
+            CONFIG.SUBJECTS.forEach(sub => {
+                if (typeof s.mastery[sub.id] !== 'number') s.mastery[sub.id] = 0;
+            });
+        }
+        s.talents = Array.isArray(s.talents) ? s.talents : [];
+        return s;
+    });
+    return merged;
+}
+
 function checkSavedGame() {
+    const s = localStorage.getItem('whk_save_v2');
+    if (!s) return; // 没有存档：什么都不做，属于正常情况
     try {
-        const s = localStorage.getItem('whk_save_v2');
-        if (s) {
-            const btn = document.createElement('button');
-            btn.className = 'btn-action';
-            btn.style.marginTop = '12px';
-            btn.style.borderColor = 'var(--btn-accent)';
-            btn.style.textAlign = 'center';
-            btn.innerHTML = `<h5 style="color:var(--btn-accent);font-size:1.1em;justify-content:center;">继续游戏</h5><p>发现存档，点击恢复</p>`;
-            btn.onclick = () => {
-                const parsed = JSON.parse(s);
-                if (!parsed.eventCooldowns) parsed.eventCooldowns = {};
-                if (!parsed.fac.music) parsed.fac.music = 0;
-                if (!parsed.fac.psy) parsed.fac.psy = 0;
-                if (!parsed.birthdayTriggered) parsed.birthdayTriggered = {};
-                if (!parsed.monthStartScores) parsed.monthStartScores = [];
-                parsed.students.forEach(st => {
-                    if (typeof st.mood === 'undefined') st.mood = 60;
-                    if (typeof st.continuousGood === 'undefined') st.continuousGood = 0;
-                    if (typeof st.effArts === 'undefined') st.effArts = 1.0;
-                    if (typeof st.effSci === 'undefined') st.effSci = 1.0;
-                    if (!st.history) st.history = { scores: [], ranks: [] };
-                    if (!st.history.scores) st.history.scores = [];
-                    if (!st.history.ranks) st.history.ranks = [];
-                    if (typeof st.birthdayMonth === 'undefined') st.birthdayMonth = 0;
-                    if (typeof st.skipStudy === 'undefined') st.skipStudy = false; // 新增
-                });
-                State = parsed;
+        const btn = document.createElement('button');
+        btn.className = 'btn-action';
+        btn.style.marginTop = '12px';
+        btn.style.borderColor = 'var(--btn-accent)';
+        btn.style.textAlign = 'center';
+        btn.innerHTML = `<h5 style="color:var(--btn-accent);font-size:1.1em;justify-content:center;">继续游戏</h5><p>发现存档，点击恢复</p>`;
+        btn.onclick = () => {
+            // 读档失败必须让玩家看到原因，不能再静默无反应
+            let parsed;
+            try {
+                parsed = migrateSave(JSON.parse(s));
+            } catch (e) {
+                console.error('[存档] 恢复失败：', e);
+                alert('存档已损坏或不兼容，无法继续游戏。\n请点击「重新开始」开始新的一局。\n\n（详情：' + e.message + '）');
+                return;
+            }
+            State = parsed;
+            try {
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('main-header').classList.remove('hidden');
                 document.getElementById('main-body').classList.remove('hidden');
@@ -1260,10 +1333,19 @@ function checkSavedGame() {
                     UI.showHelp();
                     localStorage.setItem('tutorial_shown', 'true');
                 }
-            };
-            document.getElementById('start-box-inner').appendChild(btn);
-        }
-    } catch (e) {}
+            } catch (e) {
+                console.error('[存档] 读档已合并但界面刷新失败：', e);
+                alert('存档已读取，但界面刷新失败：' + e.message + '\n请刷新页面重试。');
+            }
+        };
+        document.getElementById('start-box-inner').appendChild(btn);
+    } catch (e) {
+        // 生成「继续游戏」按钮本身失败：记录并告知玩家，避免毫无反应
+        console.error('[存档] 无法生成继续游戏按钮：', e);
+        try {
+            alert('检测到存档，但恢复入口创建失败：' + e.message + '\n请刷新页面重试，或重新开始新的一局。');
+        } catch (e2) { /* 连 alert 都不可用时只能保留 console.error */ }
+    }
 }
 
 function updateDiffBadge() {
@@ -1507,10 +1589,14 @@ const Game = {
             return alert("已经毕业啦！");
         }
 
+        // BUG-6 修复：用独立布尔标志表达「无限 AP」，不再把 ap 污染成字符串 'INF'。
+        // State.unlimitedAp 缺失（老存档）时按 false 处理，行为与修复前完全一致。
+        const infiniteAp = State.unlimitedAp === true;
+
         // ===== 勤工俭学 =====
         if (cat === 'work' && sub === 'earn') {
-            if (State.ap < 1) return alert("AP不足！");
-            State.ap -= 1;
+            if (!infiniteAp && State.ap < 1) return alert("AP不足！");
+            if (!infiniteAp) State.ap -= 1;
             State.money += 1000;
             this.log("💼 勤工俭学，赚取 ¥1000", "[资金]");
             UI.hideAllMenus();
@@ -1520,8 +1606,9 @@ const Game = {
         }
 
         if (cat === 'eff') {
-            if (State.money < 1500 || State.ap < 1) return alert("资源不足！");
-            State.money -= 1500; State.ap -= 1;
+            if (State.money < 1500 || (!infiniteAp && State.ap < 1)) return alert("资源不足！");
+            State.money -= 1500;
+            if (!infiniteAp) State.ap -= 1;
             State.students.forEach(s => {
                 if (sub === 'arts') s.effArts = Math.min(1.5, s.effArts + 0.08);
                 if (sub === 'sci') s.effSci = Math.min(1.5, s.effSci + 0.08);
@@ -1533,12 +1620,12 @@ const Game = {
             return;
         }
 
-        if (State.ap < 1) return alert("AP不足！");
+        if (!infiniteAp && State.ap < 1) return alert("AP不足！");
         let costAP = cat === 'train' ? 2 : (cat === 'intensive' ? 3 : 1);
         let costMoney = cat === 'train' ? 2000 : cat === 'intensive' ? 3000 : cat === 'test' ? 500 : (cat === 'rest' && sub === 'snack' ? 400 : (cat === 'rest' && sub === 'movie' ? 500 : 0));
-        if (State.ap < costAP) return alert("AP不足！");
+        if (!infiniteAp && State.ap < costAP) return alert("AP不足！");
         if (State.money < costMoney) return alert("班费不足！");
-        State.ap -= costAP;
+        if (!infiniteAp) State.ap -= costAP;
         if (costMoney > 0) State.money -= costMoney;
 
         const techBonus = 1 + (State.fac.tech * 0.15);
@@ -1620,8 +1707,9 @@ const Game = {
             this.updateUI();
             return;
         }
-        if (State.money < 2500 || State.ap < 2) return alert("资源不足！");
-        State.money -= 2500; State.ap -= 2;
+        if (State.money < 2500 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 2500;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.students.forEach(s => {
             s.stress = 0;
             s.mood = Math.min(100, s.mood + 20);
@@ -1635,8 +1723,9 @@ const Game = {
 
     doMockExam() {
         if (State.isGraduated) return alert("已经毕业啦！");
-        if (State.money < 4000 || State.ap < 2) return alert("资源不足！");
-        State.money -= 4000; State.ap -= 2;
+        if (State.money < 4000 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 4000;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.isMockExam = true;
         this.log("全真模拟考！", "[实战]");
         this.prepareExam("模拟考试", true);
@@ -1835,6 +1924,36 @@ const Game = {
 
     finishTurnLogic() {
         if (State.isGraduated) return;
+
+        // ===== 事件冷却递减（BUG-3 修复）=====
+        // 时序推理（位置：本函数开头，且必须早于下方 60% 触发判定）：
+        //   1) 冷却只在「成功触发某个事件」时置为 3（见 triggerEnhancedEvent）。
+        //   2) 第 N 回合触发（cd=3）后：
+        //        N+1 回合开头减到 2 → 过滤时 2 为真值 → 禁用
+        //        N+2 回合开头减到 1 → 过滤时 1 为真值 → 禁用
+        //        N+3 回合开头减到 0 → delete，本回合的触发判定里已重新可选
+        //      即「触发后隔 3 个回合可再次抽中」，事件系统不会再永久枯竭。
+        //      注：严格被整回合禁用的是 N+1、N+2 两个回合，N+3 即恢复 ——
+        //      这是把递减放在「判定之前」的必然结果，与「放到判定之后（函数末尾）」
+        //      只差一回合，语义在同一量级，不改。
+        //   3) 为什么不挪到 nextTurn() 开头：
+        //      nextTurn 的 week===2 分支只弹周考面板然后 return，要等用户点
+        //      confirmWeekly() 才结算；若用户没分配完点数，confirmWeekly 会
+        //      alert 后 return（不结算），此时「已递减但未结算」就错位了。
+        //      放在 finishTurnLogic 开头能保证「递减」与「结算+触发判定」严格同批次。
+        //   4) 月末考试周（nextTurn 的 week>4 分支，月考/高考）直接 return，
+        //      不调用 finishTurnLogic，因此该周不递减。但该周同样不会触发事件
+        //      （60% 触发判定就写在 finishTurnLogic 里），所以只会让恢复慢 1 个回合，
+        //      绝不会重新出现「13 个事件全部点完后永久枯竭」的原 BUG。属可接受取舍。
+        //   5) 降到 0 时 delete 键，避免 eventCooldowns 里堆积 0 值键
+        //      （虽然 0 是 falsy 也能通过过滤，但残留键会让调试面板/存档出现脏数据）。
+        if (!State.eventCooldowns) State.eventCooldowns = {}; // 老存档兜底
+        Object.keys(State.eventCooldowns).forEach(k => {
+            const next = (Number(State.eventCooldowns[k]) || 0) - 1;
+            if (next <= 0) delete State.eventCooldowns[k];
+            else State.eventCooldowns[k] = next;
+        });
+
         State.ap = State.maxAp;
         // ===== 经济修改：按难度 =====
         let income = 1000; // 默认普通
@@ -1949,8 +2068,22 @@ const Game = {
     },
 
     updateWeather() {
-        State.season = SEASONS[State.month.toString()];
-        State.weather = WEATHER_POOL[State.season][Math.floor(Math.random() * WEATHER_POOL[State.season].length)];
+        // BUG-5 修复：SEASONS 只配置了 8~6 月共 11 个键，没有 '7'。
+        // 调试面板的月份输入是 1..12（7 是合法输入），month=0/13 等越界值也可能被存档导入带进来，
+        // 此时 SEASONS[...] 为 undefined → WEATHER_POOL[undefined].length 抛 TypeError。
+        // 这里做两级兜底：季节回退到 '秋'，天气数组为空时再回退到默认天气对象。
+        // 注意：不改 config.js（那是另一个队员的文件），只在 game.js 内防御。
+        const DEFAULT_WEATHER = { i: '☀️', n: '晴朗', eff: '' };
+        const key = String(State.month);
+        let season = SEASONS[key];
+        if (!season) season = SEASONS['8'] || '秋'; // 未知月份统一回退到 8 月所属的「秋」
+        State.season = season;
+        const pool = WEATHER_POOL[season];
+        if (!pool || pool.length === 0) {
+            State.weather = DEFAULT_WEATHER; // 万一天气池没配置该季节，也不能崩
+        } else {
+            State.weather = pool[Math.floor(Math.random() * pool.length)];
+        }
     },
 
     getRealRank(score) {
@@ -2229,7 +2362,12 @@ const Game = {
 
     returnToClass() {
         document.getElementById('ending-modal').classList.add('hidden');
-        State.ap = 'INF';
+        // BUG-6 修复：原来写 State.ap = 'INF'（字符串），
+        // 会导致 'INF' - costAP === NaN 且被 JSON.stringify 原样落盘成 "ap": "INF"。
+        // 改为独立布尔标志 unlimitedAp，ap 始终保持数字（存档自洽）。
+        // 老存档没有该字段时，所有读取处都用 === true 判断，缺失即按 false 处理。
+        State.unlimitedAp = true;
+        State.ap = State.maxAp;
         document.getElementById('ui-ap').innerText = 'INF';
         document.getElementById('ap-max-txt').innerText = '';
         document.getElementById('btn-next-turn').innerText = '已毕业 🎓';
