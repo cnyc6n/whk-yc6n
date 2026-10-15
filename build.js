@@ -30,6 +30,7 @@ const DIST = path.join(ROOT, 'dist');
 //   utils.js   —— 效率曲线、等级换算等纯函数
 //   game.js    —— 核心玩法对象
 //   chart.js   —— Canvas 成绩走势图
+//   debug.js   —— 调试面板（按 D 后 3 秒内输入 yc6n 触发）
 //   boot.js    —— 启动入口（必须最后）
 // gapBefore: 该模块前是否留一个空行（与原单文件排版一致，避免污染 git diff）
 const JS_MODULES = [
@@ -39,6 +40,7 @@ const JS_MODULES = [
   { file: 'utils.js', gapBefore: true },
   { file: 'game.js', gapBefore: true },
   { file: 'chart.js', gapBefore: false },
+  { file: 'debug.js', gapBefore: false },
   { file: 'boot.js', gapBefore: false },
 ];
 
