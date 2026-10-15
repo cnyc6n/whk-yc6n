@@ -1,0 +1,8 @@
+# 统一行尾，避免跨平台把整份文件标记为改动
+* text=auto eol=crlf
+
+# 构建脚本与文档
+*.js   text eol=crlf
+*.html text eol=crlf
+*.css  text eol=crlf
+*.md   text eol=crlf

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>whk班主任模拟器V2.0</title>
+    <style>
+/*__CSS__*/
+    </style>
+</head>
+<div id="chart-page">
+    <div class="chart-header">
+        <h2>📈 成绩走势图</h2>
+        <button class="close-btn" onclick="UI.closeChartPage()">✕ 关闭</button>
+    </div>
+    <div class="chart-body">
+        <div class="chart-controls-wrap" id="chart-controls-page"></div>
+        <div class="chart-container">
+            <canvas id="chartCanvas"></canvas>
+            <div class="chart-tooltip" id="chart-tooltip-page"></div>
+        </div>
+    </div>
+</div>
+<body>
+
+<div id="app-wrapper">
+
+    <!-- ====== 开始界面 ====== -->
+    <div id="start-screen" class="overlay">
+        <div class="modal-box" id="start-box-inner" style="max-width:700px; border-top:6px solid var(--btn-accent);">
+            <h1 style="color:var(--text-primary); font-size:2.2em; margin-bottom:12px; text-align:center;">whk班主任模拟器 V2.0</h1>
+            <div style="background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:15px; color:var(--text-secondary); line-height:1.5; font-size:.9em;">
+                <b>背景档案：</b><br>
+                你接手了一群刚刚退役的OIer。他们虽思维"敏捷"(指摸鱼)，但文化课基础薄弱。距离高考只有不到26280000秒的时间。
+                <br><br>
+                <b>📊 更真实成绩提升模型：</b>分数越低，进步越快，进步越快，分数越高，分数越低，分数越高。
+                <br>
+                <b>🎲 更加随机的属性分配：</b>天赋决定初始效率，理科天赋→理科效率高。
+                <br>
+                <b>🎯 彩蛋：</b>如果学生名为 "???"，将拥有别样的属性。
+            </div>
+
+            <div style="margin-bottom:15px; padding:12px; border:1px dashed var(--border-color); border-radius:8px; background:var(--bg-card);">
+                <h3 style="text-align:center; margin-top:0; margin-bottom:8px; color:var(--text-primary); font-size:1em;">为你的6名神仙命名：</h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                    <input type="text" id="name-0" placeholder="Debug618" class="name-input">
+                    <input type="text" id="name-1" placeholder="cyrel" class="name-input">
+                    <input type="text" id="name-2" placeholder="Snoozing_QwQ" class="name-input">
+                    <input type="text" id="name-3" placeholder="lxy_qwq" class="name-input">
+                    <input type="text" id="name-4" placeholder="Groyhj" class="name-input">
+                    <input type="text" id="name-5" placeholder="zenghaoran" class="name-input">
+                </div>
+            </div>
+
+            <div class="mode-selector">
+                <div class="mode-btn" data-mode="easy" onclick="Game.selectMode('easy')">
+                    <h3 style="color:var(--btn-success);">🟢 简单</h3>
+                    <p>¥10000，+15%效率</p>
+                </div>
+                <div class="mode-btn selected" data-mode="normal" onclick="Game.selectMode('normal')">
+                    <h3 style="color:var(--btn-accent);">🔵 普通</h3>
+                    <p>¥5000，-15%效率</p>
+                </div>
+                <div class="mode-btn" data-mode="hard" onclick="Game.selectMode('hard')">
+                    <h3 style="color:var(--btn-danger);">🔴 困难</h3>
+                    <p>¥1000，-30%效率</p>
+                </div>
+            </div>
+
+            <button class="btn-action" style="margin-top:15px; border-color:var(--btn-accent); text-align:center;" onclick="Game.startGame()">
+                <h5 style="font-size:1.1em; text-align:center;">🚀 开始带班</h5>
+            </button>
+        </div>
+    </div>
+
+    <!-- ====== 顶部导航 ====== -->
+    <header class="hidden" id="main-header">
+        <div class="header-left">
+            <button class="btn-back" onclick="Game.confirmBackToMenu()">🏠 退出</button>
+            <span class="title">高三(OI退役)班</span>
+            <span class="diff-badge normal" id="diff-badge">普通</span>
+            <button class="help-btn" onclick="UI.showHelp()">❓ 帮助</button>
+        </div>
+        <div class="stat-group">
+            <div class="stat-pill">🗓️ <span id="ui-time">2025/09 W1</span></div>
+            <div class="stat-pill">💰 <b id="ui-money">5000</b></div>
+            <div class="stat-pill">⚡ <b id="ui-ap">3</b><span id="ap-max-txt" style="font-size:.7em; color:var(--text-muted)">/3</span></div>
+            <span id="countdown">⏳ 剩余 40 周</span>
+            <button style="background:var(--btn-danger); color:white; padding:5px 16px; border-radius:20px; font-size:.8em;" onclick="Game.nextTurn()" id="btn-next-turn">结束本周</button>
+        </div>
+    </header>
+
+    <!-- ====== 主体 ====== -->
+    <div class="app-body hidden" id="main-body">
+        <aside class="sidebar">
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="UI.switchTab('action')">🎯 决策</button>
+                <button class="tab-btn" onclick="UI.switchTab('fac')">🏗️ 设施</button>
+            </div>
+            <div id="panel-action" class="panel-content active">
+                <h4 style="margin:0 0 4px 0; color:var(--text-muted); font-size:.7em;">📖 学习提分</h4>
+                <button class="btn-action" onclick="UI.toggleMenu('menu-study')">
+                    <h5>自习复习</h5><p>选择单科强化</p><span class="cost-tag">AP:1</span>
+                </button>
+                <div class="sub-menu" id="menu-study">
+                    <button class="btn-mini" onclick="Game.doAction('study','chi')">语文</button>
+                    <button class="btn-mini" onclick="Game.doAction('study','mat')">数学</button>
+                    <button class="btn-mini" onclick="Game.doAction('study','eng')">英语</button>
+                    <button class="btn-mini" onclick="Game.doAction('study','phy')">物理</button>
+                    <button class="btn-mini" onclick="Game.doAction('study','che')">化学</button>
+                    <button class="btn-mini" onclick="Game.doAction('study','bio')">生物</button>
+                </div>
+                <button class="btn-action" onclick="UI.toggleMenu('menu-test')">
+                    <h5>📝 随堂小测</h5><p>1.3倍自习效果</p><span class="cost-tag">¥500|AP:1</span>
+                </button>
+                <div class="sub-menu" id="menu-test">
+                    <button class="btn-mini" onclick="Game.doAction('test','chi')">语文测</button>
+                    <button class="btn-mini" onclick="Game.doAction('test','mat')">数学测</button>
+                    <button class="btn-mini" onclick="Game.doAction('test','eng')">英语测</button>
+                    <button class="btn-mini" onclick="Game.doAction('test','phy')">物理测</button>
+                    <button class="btn-mini" onclick="Game.doAction('test','che')">化学测</button>
+                    <button class="btn-mini" onclick="Game.doAction('test','bio')">生物测</button>
+                </div>
+                <button class="btn-action" onclick="UI.toggleMenu('menu-train')">
+                    <h5>🚀 专项训练</h5><p>选择两个科目获得1.6倍自习</p><span class="cost-tag">¥2000|AP:2</span>
+                </button>
+                <div class="sub-menu" id="menu-train">
+                    <button class="btn-mini" onclick="Game.doAction('train','mat_phy')">数理强基</button>
+                    <button class="btn-mini" onclick="Game.doAction('train','chi_eng')">语英专项</button>
+                    <button class="btn-mini" onclick="Game.doAction('train','che_bio')">生化实验</button>
+                </div>
+                <button class="btn-action" onclick="UI.toggleMenu('menu-intensive')">
+                    <h5>🔥 单科特训</h5><p>5倍自习效果</p><span class="cost-tag">¥3000|AP:3</span>
+                </button>
+                <div class="sub-menu" id="menu-intensive">
+                    <button class="btn-mini" onclick="Game.doAction('intensive','chi')">语文特训</button>
+                    <button class="btn-mini" onclick="Game.doAction('intensive','mat')">数学特训</button>
+                    <button class="btn-mini" onclick="Game.doAction('intensive','eng')">英语特训</button>
+                    <button class="btn-mini" onclick="Game.doAction('intensive','phy')">物理特训</button>
+                    <button class="btn-mini" onclick="Game.doAction('intensive','che')">化学特训</button>
+                    <button class="btn-mini" onclick="Game.doAction('intensive','bio')">生物特训</button>
+                </div>
+                <button class="btn-action" onclick="UI.toggleMenu('menu-eff')">
+                    <h5>🧠 学法指导</h5><p>永久提升学习效率效率</p><span class="cost-tag">¥1500|AP:1</span>
+                </button>
+                <div class="sub-menu" id="menu-eff">
+                    <button class="btn-mini" onclick="Game.doAction('eff','arts')">文科拓展</button>
+                    <button class="btn-mini" onclick="Game.doAction('eff','sci')">理科逻辑</button>
+                </div>
+                <button class="btn-action" onclick="Game.doMockExam()">
+                    <h5>📚 全真模拟考</h5><p>全部科目自习一次，并获得模拟考成绩（不计入档案）</p><span class="cost-tag">¥4000|AP:2</span>
+                </button>
+                <h4 style="margin:5px 0 4px 0; color:var(--text-muted); font-size:.7em;">☕ 状态管理</h4>
+                <button class="btn-action" onclick="UI.showDoctorModal()">
+                    <h5>🏥 私人医生</h5><p>治愈病假</p><span class="cost-tag">¥1000</span>
+                </button>
+                <button class="btn-action" onclick="UI.showHotpotModal()">
+                    <h5>🍲 火锅聚餐</h5><p>清空压力</p><span class="cost-tag">¥2500|AP:2</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','snack')">
+                    <h5>🍢 小吃</h5><p>缓解压力</p><span class="cost-tag">¥400|AP:1</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','walk')">
+                    <h5>🚶 散步</h5><p>免费减压</p><span class="cost-tag">AP:1</span>
+                </button>
+                <!-- ===== 新增：看电影 ===== -->
+                <button class="btn-action" onclick="Game.doAction('rest','movie')">
+                    <h5>🎬 看电影</h5><p>放松心情 +10</p><span class="cost-tag">¥500|AP:1</span>
+                </button>
+                <!-- ===== 新增：勤工俭学 ===== -->
+                <button class="btn-action" onclick="Game.doAction('work','earn')">
+                    <h5>💼 勤工俭学</h5><p>赚取1000元班费</p><span class="cost-tag">AP:1</span>
+                </button>
+            </div>
+            <div id="panel-fac" class="panel-content">
+                <div id="fac-container"></div>
+                <p style="font-size:.6em; color:var(--text-muted); margin-top:8px;">升级设施可减轻压力、提升效率、抵御恶劣天气。</p>
+            </div>
+        </aside>
+
+        <main class="main-view">
+            <div class="view-header">
+                <h3>🏫 班级概况</h3>
+                <div>
+                    <button class="chart-toggle-btn" onclick="UI.openChartPage()">📈 查看成绩走势</button>
+                </div>
+            </div>
+            <div id="view-classroom" class="stu-grid"></div>
+        </main>
+
+        <aside class="right-panel">
+            <div class="weather-panel">
+                <div class="month-tag hidden" id="sprint-tag">冲刺月</div>
+                <div class="label" id="ui-season">秋季</div>
+                <div class="emoji" id="ui-weather">☀️</div>
+                <div class="temp" id="ui-weather-txt">秋高气爽</div>
+            </div>
+            <div class="log-panel" id="log-area"></div>
+        </aside>
+    </div>
+
+    <!-- ====== 帮助模态框 ====== -->
+    <div id="help-modal" class="overlay hidden">
+        <div class="modal-box" style="max-width:750px; border-top:6px solid var(--gold-color);">
+            <h2 class="modal-title">❓ 帮助</h2>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button id="help-tab-guide" class="btn-mini" style="flex:1; background:var(--btn-accent); color:white;" onclick="UI.switchHelpTab('guide')">📖 新手指引</button>
+                <button id="help-tab-intro" class="btn-mini" style="flex:1; background:var(--bg-input);" onclick="UI.switchHelpTab('intro')">📚 详细介绍</button>
+            </div>
+            <div id="help-content-guide" class="help-content">
+                <div class="tutorial-step"><h4>🎯 核心目标</h4><p>在 <span class="highlight">2026年6月</span> 高考前，帮助6名OI退役生提升文化课成绩。</p></div>
+                <div class="tutorial-step"><h4>⚡ 行动力 (AP)</h4><p>每周 <span class="highlight-accent">3点行动力</span>，安排学习或放松。点击“结束本周”进入下一周，月初恢复。</p></div>
+                <div class="tutorial-step"><h4>📈 提分机制</h4><p>采用 <span class="highlight-accent">分段效率曲线</span>：低分段提升快，高分段提升极慢。自习、小测、特训都会积累 <span class="highlight">压力</span>（压力过高会降低效率）。</p></div>
+                <div class="tutorial-step"><h4>🧠 天赋与效率</h4><p>每个学生拥有随机天赋（正面/负面）。心情≥80%可能获得正面特质，≤20%可能获得负面特质（最多6个）。文科/理科效率可通过“学法指导”永久提升。</p></div>
+                <div class="tutorial-step"><h4>📊 考试与报告</h4><p>每月末月考，每周周考复盘。每月切换时生成 <span class="highlight-success">详细月度报告</span>，显示各科变化和班级汇总。</p></div>
+                <div class="tutorial-step"><h4>🎨 其他</h4><p>• 高考倒计时 • 成绩走势图（悬停查看详情） • 暗色/亮色主题 • 悬停查看特质效果</p></div>
+            </div>
+            <div id="help-content-intro" class="help-content hidden">
+                <h4 style="margin:10px 0 5px 0; color:var(--text-primary);">🎲 随机事件（共13种）</h4>
+                <div id="event-list" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:180px; overflow-y:auto;"></div>
+                <h4 style="margin:10px 0 5px 0; color:var(--text-primary);">🧬 特质列表</h4>
+                <div id="talent-list" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:180px; overflow-y:auto;"></div>
+            </div>
+            <div style="text-align:center; margin-top:20px;">
+                <button style="padding:10px 30px; background:var(--btn-accent); color:white; border-radius:20px;" onclick="UI.closeModal('help-modal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 其他模态框 ====== -->
+    <div id="event-system-modal" class="overlay hidden">
+        <div class="modal-box event-modal-box" style="border-top:6px solid var(--gold-color);">
+            <h1 id="ev-modal-title" style="font-size:1.8em; margin-top:0; color:var(--text-primary);">事件标题</h1>
+            <p id="ev-modal-desc" style="font-size:1.1em; color:var(--text-secondary); margin-bottom:15px; line-height:1.5;"></p>
+            <div id="ev-modal-eff" style="background:var(--bg-input); border:1px dashed var(--border-color); padding:12px; border-radius:6px; margin-bottom:20px;"></div>
+        </div>
+    </div>
+
+    <div id="hotpot-modal" class="overlay hidden">
+        <div class="modal-box" style="text-align:center;">
+            <h2 class="modal-title">🍲 全班包场吃火锅</h2>
+            <p style="color:var(--text-secondary);">消耗 ¥2500 和 2 点行动力，清空全班压力，70%概率消除负面天赋。</p>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button style="flex:1; padding:12px; background:var(--border-color); color:var(--text-primary);" onclick="UI.closeModal('hotpot-modal')">取消</button>
+                <button style="flex:2; padding:12px; background:var(--btn-danger); color:white;" onclick="Game.confirmHotpot()">痛快买单！</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="doctor-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2 class="modal-title">🏥 聘请私人医生</h2>
+            <p style="color:var(--text-secondary);">消耗 ¥1000 立即治愈所选学生的病假。</p>
+            <div id="doctor-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
+            <button style="width:100%; padding:12px; background:var(--border-color); color:var(--text-primary);" onclick="UI.closeModal('doctor-modal')">关闭</button>
+        </div>
+    </div>
+
+    <div id="weekly-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2 class="modal-title">📝 周考复盘</h2>
+            <p style="color:var(--text-secondary);">获得 <b><span id="weekly-pts" style="color:var(--btn-danger); font-size:1.2em;">3</span></b> 点提升点数：</p>
+            <div id="weekly-alloc" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;"></div>
+            <button style="width:100%; padding:12px; background:var(--btn-success); color:white; font-size:1em;" onclick="Game.confirmWeekly()">确认分配</button>
+        </div>
+    </div>
+
+    <div id="choice-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2 class="modal-title" style="color:var(--gold-color);">⚠️ 突发状况</h2>
+            <p id="choice-desc" style="font-size:1em; line-height:1.5; color:var(--text-secondary); margin-bottom:15px;"></p>
+            <div class="choice-grid" id="choice-btns"></div>
+        </div>
+    </div>
+
+    <div id="exam-modal" class="overlay hidden" style="background:var(--bg-primary);">
+        <div style="width:95%; max-width:1200px; background:var(--bg-card); padding:20px; border-radius:12px; box-shadow:0 10px 30px var(--shadow-heavy); max-height:85vh; display:flex; flex-direction:column;">
+            <h1 id="exam-title" style="color:var(--btn-danger); text-align:center; font-size:2em; margin:0 0 4px 0;">月考</h1>
+            <p id="exam-rewards-txt" style="text-align:center; color:var(--text-muted); margin-top:0; font-weight:bold; font-size:.9em;"></p>
+            <div style="flex:1; overflow-y:auto; padding-right:8px;">
+                <table class="exam-table" id="exam-table"></table>
+            </div>
+            <button id="exam-close-btn" class="hidden" style="width:200px; margin:15px auto 0 auto; padding:10px; background:var(--btn-primary); color:white; font-size:1em; border-radius:30px;" onclick="UI.closeExam()">确认成绩</button>
+        </div>
+    </div>
+
+    <div id="monthly-report-modal" class="overlay hidden">
+        <div class="modal-box" style="max-width:750px;">
+            <h2 class="modal-title">📊 月度报告</h2>
+            <p style="color:var(--text-secondary);" id="report-month-label">2025年9月</p>
+            <div id="report-content" class="report-grid"></div>
+            <div id="report-summary" class="report-summary"></div>
+            <div style="text-align:center; margin-top:20px;">
+                <button style="padding:10px 30px; background:var(--btn-accent); color:white; border-radius:20px;" onclick="UI.closeModal('monthly-report-modal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gaokao-modal" class="overlay hidden">
+        <div class="modal-box" style="text-align:center; border:5px solid var(--btn-danger);">
+            <h1 style="color:var(--btn-danger); font-size:2.8em;">🎓 2026 高考</h1>
+            <p style="font-size:1.1em; line-height:1.5; color:var(--text-secondary);">终于到了这一天。所有的努力都将凝结在答题卡上。</p>
+            <button onclick="Game.startGaokao()" style="padding:15px 40px; background:var(--btn-danger); color:white; font-size:1.3em; border-radius:50px; margin-top:15px;">奔赴考场</button>
+        </div>
+    </div>
+
+    <div id="ending-modal" class="overlay hidden" style="background:var(--bg-primary); overflow-y:auto; padding:30px 0;">
+        <div class="modal-box" style="max-width:800px; text-align:center; margin:0 auto;">
+            <h1 style="font-size:2.2em; color:var(--text-primary); margin-bottom:8px;">🎓 毕业盛典</h1>
+            <div id="ending-player" style="background:var(--bg-input); padding:15px; border:2px solid var(--gold-color); border-radius:8px; margin-bottom:20px; text-align:left; color:var(--text-secondary);"></div>
+            <h3 style="color:var(--text-primary); border-bottom:2px solid var(--btn-accent); padding-bottom:4px; text-align:left; font-size:1.1em;">🗺️ 蹭饭地图</h3>
+            <div id="ending-cengfan" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; text-align:left; margin-bottom:20px;"></div>
+            
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:15px;">
+                <button style="padding:10px 25px; background:var(--btn-accent); color:white; font-size:1em; border-radius:6px; border:none; cursor:pointer; font-weight:bold;" onclick="Game.returnToClass()">🏠 回到班级</button>
+                <button style="padding:10px 25px; background:var(--btn-primary); color:white; font-size:1em; border-radius:6px; border:none; cursor:pointer; font-weight:bold;" onclick="localStorage.removeItem('whk_save_v2'); location.reload()">🔄 重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="theme-toggle" onclick="UI.toggleTheme()" id="theme-toggle-btn">🌙</button>
+</div>
+
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>
