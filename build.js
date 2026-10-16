@@ -8,11 +8,11 @@
  *   本脚本输出的 dist 文件在 file:// 下双击即玩。
  *
  * 用法：
- *   node build.js            # 构建
- *   node build.js --check    # 只校验，不写文件
- *   node build.js --watch    # 监听 src/ 变化自动重建
+ *   node build.js                  # 构建（自动读 version.txt 注入版本号，并同步到根目录 whk.html）
+ *   node build.js --check          # 只校验，不写文件
+ *   node build.js --watch          # 监听 src/ 变化自动重建
+ *   node release.js [版本号]        # 发布：更新版本号（可选）→ 构建 → 同步 → 打印提示
  */
-
 'use strict';
 
 const fs = require('fs');
@@ -21,6 +21,20 @@ const path = require('path');
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
+
+// ---------- 版本号（单一来源 version.txt） ----------
+const VERSION_FILE = 'version.txt';
+
+function readVersion() {
+  try {
+    const v = fs.readFileSync(path.join(ROOT, VERSION_FILE), 'utf8').trim();
+    return v || '2.1';
+  } catch (e) {
+    return '2.1';
+  }
+}
+
+const VERSION = readVersion();
 
 // 拼接顺序 = 依赖顺序。后加载的可以引用先加载的顶层 const/let。
 // 角色说明：
@@ -48,7 +62,7 @@ const JS_ORDER = JS_MODULES.map((m) => m.file);
 
 const CSS_FILE = 'styles.css';
 const TEMPLATE_FILE = 'template.html';
-const OUT_NAME = 'whk-V2.0.html';
+const OUT_NAME = 'whk.html'; // 不带版本号，避免每次发版都要改文件名（版本号在 version.txt）
 
 // ---------- 小工具 ----------
 const read = (p) => fs.readFileSync(p, 'utf8');
@@ -192,6 +206,13 @@ function build({ check = false } = {}) {
     return false;
   }
 
+  // 注入版本号（{{VERSION}} 占位符 → version.txt 的值）
+  if (!html.includes('{{VERSION}}')) {
+    console.error(`✗ template.html 缺少 {{VERSION}} 占位符（版本号单一来源失效）`);
+    return false;
+  }
+  html = html.replace(/\{\{VERSION\}\}/g, VERSION);
+
   html = html.replace('/*__CSS__*/', () => cssBlock);
   html = html.replace('/*__JS__*/', () => jsBlock);
 
@@ -214,8 +235,14 @@ function build({ check = false } = {}) {
   const outPath = path.join(DIST, OUT_NAME);
   fs.writeFileSync(outPath, html, 'utf8');
 
+  // 同步到仓库根目录（分发物随仓库提交，构建后必须一致）
+  const rootOut = path.join(ROOT, OUT_NAME);
+  fs.copyFileSync(outPath, rootOut);
+
   console.log('✓ 构建完成');
   console.log(`  产物: ${path.relative(ROOT, outPath)}`);
+  console.log(`  同步: ${path.relative(ROOT, rootOut)}`);
+  console.log(`  版本: V${VERSION}（来源 ${VERSION_FILE}）`);
   console.log(`  大小: ${kb} KB (${bytes} bytes)`);
   console.log(`  模块: ${parts.length} 个`);
   for (const p of parts) {

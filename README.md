@@ -3,7 +3,7 @@
 纯前端单文件 HTML 游戏。玩家扮演高中班主任，从 2025 年 8 月高三开学带班到
 2026 年 6 月高考，管理学生的成绩、压力与心情。
 
-**游戏请直接打开 [`whk-V2.0.html`](whk-V2.0.html)**（双击即玩，无需服务器）。
+**游戏请直接打开 [`whk.html`](whk.html)**（双击即玩，无需服务器）。
 
 ---
 
@@ -28,9 +28,10 @@
 ## 目录结构
 
 ```
-whk-V2.0.html      ← 分发给玩家的单文件（也是构建产物，随仓库提交）
+whk.html           ← 分发给玩家的单文件（构建产物，随仓库提交，文件名不带版本号）
+version.txt        ← 版本号唯一来源（用 release.js 改，别手改）
 src/               ← 开发时的源码，按模块拆分
-  template.html        HTML 骨架（含 /*__CSS__*/ 与 /*__JS__*/ 占位符）
+  template.html        HTML 骨架（含 /*__CSS__*/、/*__JS__*/、{{VERSION}} 占位符）
   styles.css           全部样式
   ui.js                UI 对象（主题、模态框、事件选项渲染）
   config.js            CONFIG / SEASONS / WEATHER_POOL（纯数据）
@@ -41,7 +42,8 @@ src/               ← 开发时的源码，按模块拆分
   debug.js             调试面板（按 D 后输入 yc6n 触发）
   boot.js              启动入口（必须最后加载）
 build.js           ← 构建脚本（零依赖，只要 Node）
-dist/              ← 构建输出（已 gitignore，内容与 whk-V2.0.html 相同）
+release.js         ← 发布脚本（改版本号 + 构建 + 同步一条命令）
+dist/              ← 构建输出（已 gitignore，内容与 whk.html 相同）
 ```
 
 ## 调试面板
@@ -73,15 +75,23 @@ dist/              ← 构建输出（已 gitignore，内容与 whk-V2.0.html �
 > （并删掉 `styles.css` 末尾的调试样式块），构建产物会自动不含该功能。
 
 
-## 构建
+## 构建与发布
 
 需要 Node.js（无第三方依赖）：
 
 ```bash
-node build.js            # 构建到 dist/whk-V2.0.html
-node build.js --check    # 只校验语法与 file:// 兼容性，不写文件
-node build.js --watch    # 监听 src/ 改动自动重建
+node build.js               # 构建到 dist/whk.html，并同步到根目录 whk.html
+node build.js --check       # 只校验语法与 file:// 兼容性，不写文件
+node build.js --watch       # 监听 src/ 改动自动重建
+
+# 发布新版本（推荐）：
+node release.js             # 用当前 version.txt 构建 + 同步
+node release.js 2.2         # 先改版本号为 2.2，再构建 + 同步
 ```
+
+**版本号只存一处（`version.txt`）**，构建时自动注入到 `{{VERSION}}` 占位符
+（`<title>` 与开始界面标题）。以后发版只需 `node release.js <新版本号>`，
+不会再出现"改完标题忘了改文件名"或"title 与 h1 版本号不一致"的问题。
 
 ### 构建期安全检查
 
@@ -107,8 +117,8 @@ node build.js --watch    # 监听 src/ 改动自动重建
 
 ## 版本
 
-- `whk-V2.0.html` — 当前主线
-- `New-whk-safe.html` — 旧的 V1.2，已停止维护
+- `whk.html` — 当前主线（版本号见 `version.txt`）
+- ~~`New-whk-safe.html`~~ — 旧 V1.2，已于 2026-10-16 退役删除（git 历史可找回）
 
 ## 许可
 

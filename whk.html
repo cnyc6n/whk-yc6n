@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>whk班主任模拟器V1.2</title>
+    <title>whk班主任模拟器V2.2</title>
     <style>
-        /* ===== 完整样式表 ===== */
+        /* ===== 完整样式表（不变） ===== */
         :root {
             --bg-primary: #f1f5f9;
             --bg-secondary: #ffffff;
@@ -59,11 +59,13 @@
             --bg-sidebar: #1e293b;
             --bg-log: #0f172a;
             --bg-input: #334155;
+            --bg-hover: #2d3a4f;
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
             --text-log: #f8fafc;
             --border-color: #334155;
+            --shadow-color: rgba(0,0,0,0.35);
             --shadow-heavy: rgba(0,0,0,0.5);
             --overlay-bg: rgba(0,0,0,0.92);
             --scrollbar-track: #1e293b;
@@ -75,9 +77,13 @@
             --tag-neg-border: #991b1b;
             --tag-neg-text: #fca5a5;
             --btn-primary: #334155;
+            --btn-primary-hover: #475569;
             --btn-danger: #dc2626;
+            --btn-danger-hover: #b91c1c;
             --btn-success: #059669;
+            --btn-success-hover: #047857;
             --btn-accent: #3b82f6;
+            --btn-accent-hover: #2563eb;
             --chart-grid: #475569;
             --chart-text: #94a3b8;
             --modal-bg: #1e293b;
@@ -90,7 +96,7 @@
             --cost-text: #fbbf24;
             --log-border: rgba(255,255,255,0.1);
             --gold-color: #fbbf24;
-            --log-time: #64748b;
+            --log-time: #94a3b8;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI','Microsoft YaHei',sans-serif; transition: background-color .3s, color .3s, border-color .3s, box-shadow .3s; }
         body { background: var(--bg-primary); color: var(--text-primary); margin:0; display:flex; justify-content:center; min-height:100vh; overflow:hidden; }
@@ -244,6 +250,222 @@
             #btn-next-turn { font-size:.7em; padding:4px 12px; }
             #countdown { font-size:.65em; }
         }
+
+/* ============================================================
+   调试面板（dev-tools）
+   与现有主题变量保持一致，自动适配日间 / 夜间模式
+   ============================================================ */
+.dbg-box {
+    max-width: 900px;
+    width: 92vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    border-top: 6px solid var(--btn-accent);
+}
+.dbg-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.dbg-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4em;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+.dbg-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.dbg-warn {
+    background: var(--tag-neg-bg);
+    border: 1px solid var(--tag-neg-border);
+    color: var(--tag-neg-text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: .9em;
+}
+
+.dbg-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+.dbg-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .9em;
+    font-family: inherit;
+}
+.dbg-tab:hover { background: var(--bg-hover); }
+.dbg-tab.active {
+    background: var(--btn-accent);
+    color: #fff;
+    border-color: var(--btn-accent);
+}
+
+.dbg-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 120px;
+    padding-right: 4px;
+}
+
+.dbg-sec { margin-bottom: 16px; }
+.dbg-empty { color: var(--text-muted); text-align: center; padding: 30px 0; }
+
+.dbg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.dbg-row > label {
+    min-width: 74px;
+    color: var(--text-secondary);
+    font-size: .9em;
+}
+
+.dbg-num {
+    width: 110px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: .9em;
+}
+.dbg-mini {
+    width: 64px;
+    padding: 4px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: .85em;
+}
+
+.dbg-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: .85em;
+    white-space: nowrap;
+}
+.dbg-btn:hover { background: var(--bg-hover); border-color: var(--btn-accent); }
+.dbg-btn-danger { border-color: var(--btn-danger); color: var(--btn-danger); }
+.dbg-btn-danger:hover { background: var(--btn-danger); color: #fff; }
+
+.dbg-quick { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.dbg-stu {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--bg-log);
+}
+.dbg-stu-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.dbg-total {
+    font-size: .85em;
+    color: var(--btn-accent);
+    border: 1px solid var(--btn-accent);
+    border-radius: 20px;
+    padding: 2px 10px;
+}
+
+.dbg-meters { margin-bottom: 8px; }
+
+.dbg-subs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.dbg-subrow { display: flex; align-items: center; gap: 5px; }
+.dbg-subname { font-size: .85em; color: var(--text-secondary); min-width: 30px; }
+.dbg-cap { font-size: .78em; color: var(--text-muted); }
+
+.dbg-tags {
+    font-size: .82em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.dbg-tag {
+    background: var(--tag-pos-bg);
+    border: 1px solid var(--tag-pos-border);
+    color: var(--tag-pos-text);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.dbg-faclv { font-size: .85em; color: var(--text-secondary); flex: 1; min-width: 130px; }
+
+.dbg-json {
+    width: 100%;
+    height: 300px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: .8em;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.dbg-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+    margin-top: 10px;
+}
+.dbg-live {
+    flex: 1;
+    font-size: .82em;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+    .dbg-row > label { min-width: 58px; }
+    .dbg-num { width: 88px; }
+    .dbg-box { width: 96vw; max-height: 92vh; }
+}
     </style>
 </head>
 <div id="chart-page">
@@ -266,16 +488,16 @@
     <!-- ====== 开始界面 ====== -->
     <div id="start-screen" class="overlay">
         <div class="modal-box" id="start-box-inner" style="max-width:700px; border-top:6px solid var(--btn-accent);">
-            <h1 style="color:var(--text-primary); font-size:2.2em; margin-bottom:12px; text-align:center;">whk班主任模拟器V1.2</h1>
+            <h1 style="color:var(--text-primary); font-size:2.2em; margin-bottom:12px; text-align:center;">whk班主任模拟器 V2.2</h1>
             <div style="background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:15px; color:var(--text-secondary); line-height:1.5; font-size:.9em;">
                 <b>背景档案：</b><br>
-                你接手了一群刚刚结束信息学奥赛（OI）的退役生。他们虽思维敏捷，但文化课基础薄弱。距离高考只有不到10个月的时间。
+                你接手了一群刚刚退役的OIer。他们虽思维"敏捷"(指摸鱼)，但文化课基础薄弱。距离高考只有不到26280000秒的时间。
                 <br><br>
-                <b>📊 成绩提升模型：</b>分段效率曲线，低分段提升快，高分段提升极慢。
+                <b>📊 更真实成绩提升模型：</b>分数越低，进步越快，进步越快，分数越高，分数越低，分数越高。
                 <br>
-                <b>🎲 属性分配：</b>天赋决定初始效率，理科天赋→理科效率高。
+                <b>🎲 更加随机的属性分配：</b>天赋决定初始效率，理科天赋→理科效率高。
                 <br>
-                <b>🎯 彩蛋：</b>如果学生名为 "???"，将拥有特殊属性。
+                <b>🎯 彩蛋：</b>如果学生名为 "???"，将拥有别样的属性。
             </div>
 
             <div style="margin-bottom:15px; padding:12px; border:1px dashed var(--border-color); border-radius:8px; background:var(--bg-card);">
@@ -360,7 +582,7 @@
                     <button class="btn-mini" onclick="Game.doAction('test','bio')">生物测</button>
                 </div>
                 <button class="btn-action" onclick="UI.toggleMenu('menu-train')">
-                    <h5>🚀 特训班</h5><p>两科1.6倍自习</p><span class="cost-tag">¥2000|AP:2</span>
+                    <h5>🚀 专项训练</h5><p>选择两个科目获得1.6倍自习</p><span class="cost-tag">¥2000|AP:2</span>
                 </button>
                 <div class="sub-menu" id="menu-train">
                     <button class="btn-mini" onclick="Game.doAction('train','mat_phy')">数理强基</button>
@@ -379,14 +601,14 @@
                     <button class="btn-mini" onclick="Game.doAction('intensive','bio')">生物特训</button>
                 </div>
                 <button class="btn-action" onclick="UI.toggleMenu('menu-eff')">
-                    <h5>🧠 学法指导</h5><p>永久提升效率</p><span class="cost-tag">¥1500|AP:1</span>
+                    <h5>🧠 学法指导</h5><p>永久提升学习效率效率</p><span class="cost-tag">¥1500|AP:1</span>
                 </button>
                 <div class="sub-menu" id="menu-eff">
                     <button class="btn-mini" onclick="Game.doAction('eff','arts')">文科拓展</button>
                     <button class="btn-mini" onclick="Game.doAction('eff','sci')">理科逻辑</button>
                 </div>
                 <button class="btn-action" onclick="Game.doMockExam()">
-                    <h5>📚 全真模拟考</h5><p>含50%特殊事件</p><span class="cost-tag">¥4000|AP:2</span>
+                    <h5>📚 全真模拟考</h5><p>全部科目自习一次，并获得模拟考成绩（不计入档案）</p><span class="cost-tag">¥4000|AP:2</span>
                 </button>
                 <h4 style="margin:5px 0 4px 0; color:var(--text-muted); font-size:.7em;">☕ 状态管理</h4>
                 <button class="btn-action" onclick="UI.showDoctorModal()">
@@ -407,7 +629,7 @@
                 </button>
                 <!-- ===== 新增：勤工俭学 ===== -->
                 <button class="btn-action" onclick="Game.doAction('work','earn')">
-                    <h5>💼 勤工俭学</h5><p>赚取班费</p><span class="cost-tag">AP:1</span>
+                    <h5>💼 勤工俭学</h5><p>赚取1000元班费</p><span class="cost-tag">AP:1</span>
                 </button>
             </div>
             <div id="panel-fac" class="panel-content">
@@ -454,7 +676,7 @@
                 <div class="tutorial-step"><h4>🎨 其他</h4><p>• 高考倒计时 • 成绩走势图（悬停查看详情） • 暗色/亮色主题 • 悬停查看特质效果</p></div>
             </div>
             <div id="help-content-intro" class="help-content hidden">
-                <h4 style="margin:10px 0 5px 0; color:var(--text-primary);">🎲 随机事件（共12种）</h4>
+                <h4 style="margin:10px 0 5px 0; color:var(--text-primary);">🎲 随机事件（共13种）</h4>
                 <div id="event-list" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:180px; overflow-y:auto;"></div>
                 <h4 style="margin:10px 0 5px 0; color:var(--text-primary);">🧬 特质列表</h4>
                 <div id="talent-list" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:180px; overflow-y:auto;"></div>
@@ -561,10 +783,27 @@
 
 <script>
 // ============================================================
-// 完整 JavaScript 代码
+// ui.js
+// ============================================================
+// ============================================================
+// 完整 JavaScript 代码 (修改版)
 // ============================================================
 
-// ===== UI 对象 =====
+// ===== 学生状态统一钳制（防止事件把数值刷出合法范围） =====
+// 压力/心情：0-100；各科成绩：0 ~ 该科满分 cap。
+// 所有会改动学生数值的入口都应调用它，避免「钳了压力心情、漏了成绩」。
+function clampStudentState(s) {
+    if (!s) return;
+    s.stress = Math.max(0, Math.min(100, s.stress || 0));
+    s.mood = Math.max(0, Math.min(100, s.mood || 0));
+    if (!s.mastery) s.mastery = {};
+    CONFIG.SUBJECTS.forEach(sub => {
+        const v = s.mastery[sub.id] || 0;
+        s.mastery[sub.id] = Math.max(0, Math.min(sub.cap, v));
+    });
+}
+
+// ===== UI 对象（不变） =====
 const UI = {
     toggleTheme() {
         const html = document.documentElement;
@@ -799,44 +1038,56 @@ const UI = {
         window._currentOptions = options;
     },
     handleEventChoice(idx) {
-    const ev = window._currentEvent;
-    const opt = window._currentOptions[idx];
-    if (!opt.available) return;
-    let effectDesc = '';
-    if (opt.cost) { State.money -= opt.cost; effectDesc += `花费 ¥${opt.cost}；`; }
-    if (opt.costAP) { State.ap -= opt.costAP; effectDesc += `消耗 ${opt.costAP}AP；`; }
-    if (opt.effect) {
-        const fn = opt.effect;
-        if (fn.length === 1) {
-            const target = Game.getRandStu(1)[0];
-            if (target) {
-                const oldStress = target.stress;
-                const oldMood = target.mood;
-                fn(target);
-                // ===== 钳制压力与心情 =====
-                target.stress = Math.max(0, Math.min(100, target.stress));
-                target.mood = Math.max(0, Math.min(100, target.mood));
-                const stressChange = target.stress - oldStress;
-                const moodChange = target.mood - oldMood;
-                effectDesc += `影响学生 ${target.name}：压力${stressChange >= 0 ? '+' : ''}${Math.round(stressChange)}%，心情${moodChange >= 0 ? '+' : ''}${Math.round(moodChange)}%`;
-            }
-        } else {
-            fn();
-            // ===== 全班钳制 =====
-            State.students.forEach(st => {
-                st.stress = Math.max(0, Math.min(100, st.stress));
-                st.mood = Math.max(0, Math.min(100, st.mood));
-            });
-            effectDesc += '全班受到影响';
+        const ev = window._currentEvent;
+        const opt = window._currentOptions[idx];
+        if (!opt.available) return;
+        // ===== 余额兜底：钱/AP 不够就不执行该选项，避免扣成负数 =====
+        if (opt.cost && State.money < opt.cost) {
+            Game.log(`班费不足（需要 ¥${opt.cost}，当前 ¥${State.money}），无法选择「${opt.text}」`, "[事件]");
+            alert(`班费不足！需要 ¥${opt.cost}，当前只有 ¥${State.money}`);
+            return;
         }
+        if (opt.costAP && State.ap < opt.costAP) {
+            Game.log(`AP 不足（需要 ${opt.costAP}AP，当前 ${State.ap}），无法选择「${opt.text}」`, "[事件]");
+            alert(`AP 不足！需要 ${opt.costAP}AP，当前只有 ${State.ap}`);
+            return;
+        }
+        let effectDesc = '';
+        if (opt.cost) { State.money -= opt.cost; effectDesc += `花费 ¥${opt.cost}；`; }
+        if (opt.costAP) { State.ap -= opt.costAP; effectDesc += `消耗 ${opt.costAP}AP；`; }
+        if (opt.effect) {
+            const fn = opt.effect;
+            if (fn.length === 1) {
+                const target = Game.getRandStu(1)[0];
+                if (target) {
+                    const oldStress = target.stress;
+                    const oldMood = target.mood;
+                    fn(target);
+                    // ===== 钳制压力、心情与各科成绩 =====
+                    clampStudentState(target);
+                    const stressChange = target.stress - oldStress;
+                    const moodChange = target.mood - oldMood;
+                    effectDesc += `影响学生 ${target.name}：压力${stressChange >= 0 ? '+' : ''}${Math.round(stressChange)}%，心情${moodChange >= 0 ? '+' : ''}${Math.round(moodChange)}%`;
+                }
+            } else {
+                fn();
+                // ===== 全班钳制（压力/心情/成绩） =====
+                State.students.forEach(st => clampStudentState(st));
+                effectDesc += '全班受到影响';
+            }
+        }
+        // ===== 兜底：任何 effect 内部私自扣钱也不允许出现负班费 =====
+        State.money = Math.max(0, State.money);
+        Game.log(`事件【${ev.title}】已处理：${effectDesc}`, "[事件]");
+        UI.closeModal('event-system-modal');
+        Game.updateUI();
+        saveGame();
     }
-    Game.log(`事件【${ev.title}】已处理：${effectDesc}`, "[事件]");
-    UI.closeModal('event-system-modal');
-    Game.updateUI();
-    saveGame();
-}
 };
-// ===== 续接第 1001 行 =====
+// ============================================================
+// config.js
+// ============================================================
+// ===== 配置（修改） =====
 const CONFIG = {
     SUBJECTS: [
         { id: 'chi', n: '语文', cap: 150, type: 'arts' },
@@ -848,10 +1099,10 @@ const CONFIG = {
     ],
     FACILITIES: [
         { id: 'desk', n: '课桌椅', lv: ['破木桌', '普通课桌', '人体工学椅'], p: [0, 2000, 6000], d: '降低复习压力' },
-        { id: 'tech', n: '教学硬件', lv: ['粉笔黑板', '投影仪', '智慧屏'], p: [0, 3000, 8000], d: '提高吸收效率' },
-        { id: 'ac', n: '恒温系统', lv: ['无', '空调', '中央新风'], p: [0, 2500, 7000], d: '减免恶劣天气生病' },
+        { id: 'tech', n: '教学硬件', lv: ['粉笔黑板', '投影仪', '一体机'], p: [0, 3000, 8000], d: '提高学习效率' },
+        { id: 'ac', n: '恒温系统', lv: ['无', '老式空调', '中央空调'], p: [0, 2500, 7000], d: '减免恶劣天气生病' },
         { id: 'music', n: '校园广播网', lv: ['无', '普通广播', '沉浸音响'], p: [0, 2000, 5000], d: '每回合恢复心情' },
-        { id: 'psy', n: '心理宣泄室', lv: ['无', '兼职沙袋', '专业咨询'], p: [0, 3000, 8000], d: '每回合大幅降低压力' }
+        { id: 'psy', n: '心理宣泄室', lv: ['无', '兼职咨询', '专业咨询'], p: [0, 3000, 8000], d: '每回合大幅降低压力' }
     ],
     TALENTS: [
         { id: 't1', n: '解析眼', t: 'pos', cost: 1.2, type: 'sci', d: '理科学习效率+15%' },
@@ -866,7 +1117,7 @@ const CONFIG = {
         { id: 'n1', n: '粗心', t: 'neg', cost: -0.5, type: 'all', d: '大考容易扣分' },
         { id: 'n2', n: '玻璃心', t: 'neg', cost: -0.8, type: 'all', d: '压力极易升高' },
         { id: 'n3', n: '偏科', t: 'neg', cost: -0.5, type: 'all', d: '大考随机发挥失常' },
-        { id: 'n4', n: '网瘾', t: 'neg', cost: -0.6, type: 'sci', d: '有概率翘课打游戏' },
+        { id: 'n4', n: '网瘾', t: 'neg', cost: -0.6, type: 'sci', d: '有概率翘课打游戏，且可能传播' },
         { id: 'n5', n: '多愁善感', t: 'neg', cost: -0.5, type: 'all', d: '心情极易下降' }
     ],
     UNIS: [
@@ -884,65 +1135,90 @@ const CONFIG = {
         'che': [{ t: '方程式配平失败', v: -6 }, { t: '推断看错条件', v: -10 }, { t: '有机推断全对', v: 12 }, { t: '实验方案满分', v: 10 }, { t: '计算点错', v: -4 }, { t: '工业流程全对', v: 14 }],
         'bio': [{ t: '遗传算错概率', v: -8 }, { t: '概念记混', v: -10 }, { t: '基因图谱看穿', v: 12 }, { t: '选择题全对', v: 10 }, { t: '实验设计完美', v: 14 }, { t: '生态填空全错', v: -6 }]
     },
+    // ===== 全新事件列表（13个事件，更丰富） =====
     EVENTS: [
         { id: 'ev1', title: '🎮 沉迷游戏', desc: '某位同学周末偷偷跑去网吧通宵打游戏...', options: [
-            { text: '严厉批评并没收手机', effect: (s) => { s.stress += 30; s.mood -= 10; } },
-            { text: '找他谈心，了解原因', effect: (s) => { s.stress -= 20; s.mood += 10; } },
-            { text: '通知家长共同教育 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.stress -= 40; s.mood += 5; } }
+            { text: '严厉批评并没收手机', effect: (s) => { s.stress += 20; s.mood -= 15; } },
+            { text: '找他谈心，了解原因', effect: (s) => { s.stress -= 10; s.mood += 5; } },
+            { text: '通知家长共同教育 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.stress -= 20; s.mood += 5; s.mastery.mat += 2; s.mastery.eng += 2; } }
         ] },
         { id: 'ev2', title: '💡 突然顿悟', desc: '一位学生在刷题时突然打通了任督二脉！', options: [
-            { text: '表扬并鼓励分享', effect: (s) => { s.mood += 20; s.mastery.mat += 5; s.mastery.phy += 5; } },
-            { text: '安排他给全班讲解', effect: (s) => { s.mood += 10; State.students.forEach(st => { st.mastery.mat += 2; st.mastery.phy += 2; }); } },
-            { text: '奖励竞赛书 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: (s) => { s.mood += 30; s.mastery.mat += 12; s.mastery.phy += 12; } }
+            { text: '表扬并鼓励分享', effect: (s) => { s.mood += 15; s.mastery.mat += 5; s.mastery.phy += 5; s.stress -= 5; } },
+            { text: '安排他给全班讲解', effect: (s) => { s.mood += 10; s.stress += 10; State.students.forEach(st => { st.mastery.mat += 2; st.mastery.phy += 2; }); } },
+            { text: '奖励竞赛书 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: (s) => { s.mood += 20; s.mastery.mat += 12; s.mastery.phy += 12; s.stress -= 5; } }
         ] },
         { id: 'ev3', title: '😵 心态崩溃', desc: '模拟卷太难，某位同学当场撕了卷子...', options: [
-            { text: '严肃批评，树立纪律', effect: (s) => { s.stress += 40; s.mood -= 20; } },
-            { text: '课后心理辅导', effect: (s) => { s.stress -= 30; s.mood += 15; } },
-            { text: '安排去心理宣泄室 (需Lv≥1)', condition: () => State.fac.psy >= 1, effect: (s) => { s.stress -= 50; s.mood += 20; } }
+            { text: '严肃批评，树立纪律', effect: (s) => { s.stress += 30; s.mood -= 20; } },
+            { text: '课后心理辅导', effect: (s) => { s.stress -= 20; s.mood += 10; s.mastery.chi += 2; s.mastery.eng += 2; } },
+            { text: '安排去心理宣泄室 (需Lv≥1)', condition: () => State.fac.psy >= 1, effect: (s) => { s.stress -= 40; s.mood += 15; s.mastery.mat += 3; s.mastery.phy += 3; } }
         ] },
         { id: 'ev4', title: '📧 家长投诉', desc: '家长群里有人发长文吐槽作业太多...', options: [
-            { text: '公开回应，安抚家长', effect: () => { State.students.forEach(s => { s.stress += 10; }); } },
-            { text: '召开线上家长会', effect: () => { State.money -= 200; State.students.forEach(s => { s.mood += 5; }); } },
-            { text: '减少作业量 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: () => { State.students.forEach(s => { s.stress -= 20; s.mood += 10; }); } }
+            { text: '公开回应，安抚家长', effect: () => { State.students.forEach(s => { s.stress += 10; s.mood -= 5; }); } },
+            { text: '召开线上家长会 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: () => { State.students.forEach(s => { s.mood += 5; s.stress -= 5; }); } },
+            { text: '减少作业量 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 10; }); } }
         ] },
         { id: 'ev5', title: '🏆 竞赛获奖', desc: '某位同学在学科竞赛中获奖，全班振奋！', options: [
-            { text: '全校表扬，树立榜样', effect: (s) => { s.mood += 30; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_comp')) { s.talents.push({ id: 't_comp', n: '竞赛达人', t: 'pos', d: '理科效率+10%' }); } } },
-            { text: '发放奖金鼓励', effect: (s) => { s.mood += 20; State.money -= 500; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
+            { text: '全校表扬，树立榜样', effect: (s) => { s.mood += 25; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_comp')) { s.talents.push({ id: 't_comp', n: '竞赛达人', t: 'pos', d: '理科效率+10%' }); } } },
+            { text: '发放奖金鼓励 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.mood += 15; if (s.talents.length < 6 && !s.talents.some(t => t.id === 't_money')) { s.talents.push({ id: 't_money', n: '奖金激励', t: 'pos', d: '考试发挥更稳定' }); } } }
         ] },
         { id: 'ev6', title: '🤒 生病请假', desc: '换季流感，某位同学高烧缺席了本周课程。', options: [
-            { text: '让他好好休息', effect: (s) => { s.sickTimer = 2; s.stress -= 20; } },
-            { text: '安排同学送笔记', effect: (s) => { s.sickTimer = 1; s.mood += 10; } },
-            { text: '请私人医生上门 (需¥1000)', condition: () => State.money >= 1000, cost: 1000, effect: (s) => { s.sickTimer = 0; s.mood += 15; } }
+            { text: '让他好好休息', effect: (s) => { s.sickTimer = 2; s.stress -= 15; } },
+            { text: '安排同学送笔记', effect: (s) => { s.sickTimer = 1; s.mood += 8; s.mastery.chi += 2; s.mastery.eng += 2; } },
+            { text: '请私人医生上门 (需¥1000)', condition: () => State.money >= 1000, cost: 1000, effect: (s) => { s.sickTimer = 0; s.mood += 10; s.stress -= 10; } }
         ] },
         { id: 'ev7', title: '📚 奋发图强', desc: '垫底的同学痛定思痛，决定逆袭！', options: [
-            { text: '制定个人学习计划', effect: (s) => { s.mood += 10; CONFIG.SUBJECTS.forEach(sub => { s.mastery[sub.id] += 3; }); } },
-            { text: '安排一对一辅导', effect: (s) => { s.mood += 15; s.mastery.mat += 8; s.mastery.eng += 8; } },
-            { text: '购买额外习题 (需¥400)', condition: () => State.money >= 400, cost: 400, effect: (s) => { s.mood += 20; CONFIG.SUBJECTS.forEach(sub => { s.mastery[sub.id] += 6; }); } }
+            { text: '制定个人学习计划', effect: (s) => { s.mood += 10; CONFIG.SUBJECTS.forEach(sub => { s.mastery[sub.id] += 3; }); s.stress += 5; } },
+            { text: '安排一对一辅导', effect: (s) => { s.mood += 10; s.mastery.mat += 8; s.mastery.eng += 8; s.stress += 8; } },
+            { text: '购买额外习题 (需¥400)', condition: () => State.money >= 400, cost: 400, effect: (s) => { s.mood += 15; CONFIG.SUBJECTS.forEach(sub => { s.mastery[sub.id] += 6; }); s.stress += 10; } }
         ] },
         { id: 'ev8', title: '🎂 生日buff', desc: '班里给某位同学过了生日，心情大好！', options: [
-            { text: '全班庆祝', effect: (s) => { s.mood += 25; s.stress -= 20; State.students.forEach(st => { st.mood += 5; }); } },
-            { text: '送他一本好书', effect: (s) => { s.mood += 20; s.mastery.chi += 8; s.mastery.eng += 8; } },
-            { text: '组织生日派对 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.mood += 30; s.stress -= 30; State.students.forEach(st => { st.mood += 10; }); } }
+            { text: '全班庆祝', effect: (s) => { s.mood += 20; s.stress -= 15; State.students.forEach(st => { st.mood += 5; }); } },
+            { text: '送他一本好书', effect: (s) => { s.mood += 15; s.mastery.chi += 8; s.mastery.eng += 8; s.stress -= 5; } },
+            { text: '组织生日派对 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: (s) => { s.mood += 25; s.stress -= 20; State.students.forEach(st => { st.mood += 8; }); } }
         ] },
         { id: 'ev9', title: '😰 考前焦虑', desc: '大考临近，多名学生出现焦虑症状。', options: [
-            { text: '开展考前心理辅导', effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 5; }); } },
-            { text: '组织放松活动', effect: () => { State.students.forEach(s => { s.stress -= 25; }); } },
-            { text: '邀请专家讲座 (需¥800)', condition: () => State.money >= 800, cost: 800, effect: () => { State.students.forEach(s => { s.stress -= 35; s.mood += 15; }); } }
+            { text: '开展考前心理辅导', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 5; s.mastery.chi += 1; s.mastery.eng += 1; }); } },
+            { text: '组织放松活动', effect: () => { State.students.forEach(s => { s.stress -= 20; s.mood += 5; }); } },
+            { text: '邀请专家讲座 (需¥800)', condition: () => State.money >= 800, cost: 800, effect: () => { State.students.forEach(s => { s.stress -= 25; s.mood += 10; CONFIG.SUBJECTS.forEach(sub => { s.mastery[sub.id] += 2; }); }); } }
         ] },
         { id: 'ev10', title: '🎯 目标明确', desc: '一位学生突然明确了自己的目标大学，动力十足！', options: [
-            { text: '鼓励他制定计划', effect: (s) => { s.mood += 20; s.mastery.mat += 5; s.mastery.eng += 5; } },
-            { text: '分享他的目标激励全班', effect: (s) => { s.mood += 15; State.students.forEach(st => { st.mood += 5; }); } },
-            { text: '帮他联系目标大学学长 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: (s) => { s.mood += 30; s.mastery.chi += 10; s.mastery.eng += 10; } }
+            { text: '鼓励他制定计划', effect: (s) => { s.mood += 15; s.mastery.mat += 5; s.mastery.eng += 5; s.stress += 5; } },
+            { text: '分享他的目标激励全班', effect: (s) => { s.mood += 10; State.students.forEach(st => { st.mood += 5; st.mastery.mat += 1; st.mastery.eng += 1; }); } },
+            { text: '帮他联系目标大学学长 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: (s) => { s.mood += 20; s.mastery.chi += 10; s.mastery.eng += 10; s.stress -= 5; } }
         ] },
         { id: 'ev11', title: '🌧️ 阴雨天', desc: '连续阴雨天气，班级气氛低迷。', options: [
             { text: '放轻松音乐调节气氛', effect: () => { State.students.forEach(s => { s.mood += 5; }); } },
-            { text: '组织室内游戏', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 10; }); } },
-            { text: '购买小零食安慰 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: () => { State.students.forEach(s => { s.mood += 15; s.stress -= 10; }); } }
+            { text: '组织室内游戏', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 8; }); } },
+            { text: '购买小零食安慰 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: () => { State.students.forEach(s => { s.mood += 12; s.stress -= 10; }); } }
         ] },
         { id: 'ev12', title: '🌟 星光闪耀', desc: '班级在全校评比中获得优秀班级称号！', options: [
             { text: '拍照留念，张贴荣誉榜', effect: () => { State.students.forEach(s => { s.mood += 10; }); } },
-            { text: '组织班级聚餐 (需¥600)', condition: () => State.money >= 600, cost: 600, effect: () => { State.students.forEach(s => { s.mood += 20; s.stress -= 20; }); } },
-            { text: '申请班级经费奖励', effect: () => { State.money += 1000; State.students.forEach(s => { s.mood += 15; }); } }
+            { text: '组织班级聚餐 (需¥600)', condition: () => State.money >= 600, cost: 600, effect: () => { State.students.forEach(s => { s.mood += 15; s.stress -= 15; }); } },
+            { text: '申请班级经费奖励', effect: () => { State.money += 1000; State.students.forEach(s => { s.mood += 10; }); } }
+        ] },
+        // ===== 新增网瘾相关事件 =====
+        { id: 'ev13', title: '🕹️ 抓现行！', desc: '你发现某位同学上课时偷偷用手机打游戏，影响极坏。', options: [
+            { text: '没收手机并严厉批评 (消除网瘾)', effect: (s) => { 
+                s.talents = s.talents.filter(t => t.id !== 'n4'); 
+                s.mood -= 20; 
+                s.stress += 20; 
+                Game.log(`${s.name} 被没收手机，网瘾消除，但心情低落。`, "[网瘾]");
+            }},
+            { text: '课后心理辅导，引导正确使用 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: (s) => { 
+                s.talents = s.talents.filter(t => t.id !== 'n4'); 
+                s.mood += 5; 
+                s.stress -= 10; 
+                s.mastery.chi += 2; 
+                s.mastery.eng += 2; 
+                Game.log(`${s.name} 通过心理辅导消除了网瘾。`, "[网瘾]");
+            }},
+            { text: '通知家长，加强管教 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: (s) => { 
+                s.talents = s.talents.filter(t => t.id !== 'n4'); 
+                s.mood -= 10; 
+                s.stress += 5; 
+                s.mastery.mat += 4; 
+                Game.log(`${s.name} 家长介入，网瘾消除。`, "[网瘾]");
+            }}
         ] }
     ]
 };
@@ -955,8 +1231,13 @@ const WEATHER_POOL = {
     '夏': [{ i: '🥵', n: '高温预警', eff: 'hot' }, { i: '⛈️', n: '狂风暴雨' }]
 };
 
+// ============================================================
+// state.js
+// ============================================================
 // ===== 状态 =====
-let State = {
+
+// 标准状态模板：初始状态与老存档补齐共用这一份来源，避免两处各自漂移
+const DEFAULT_STATE = {
     week: 1, month: 8, year: 2025, money: 0, ap: 3, maxAp: 3,
     diff: 'normal', mode: 'normal', isGraduated: false, isMockExam: false,
     weather: { i: '☀️', n: '晴朗', eff: '' }, season: '秋',
@@ -967,38 +1248,87 @@ let State = {
     monthStartScores: []
 };
 
+// 学生默认形状（与 game.js 中 startGame 生成的学生字段保持一致）
+const DEFAULT_STUDENT = {
+    name: '',
+    status: 'normal',
+    stress: 0,
+    sickTimer: 0,
+    mood: 60,
+    continuousGood: 0,
+    history: { scores: [], ranks: [] },
+    talents: [],
+    mastery: {},
+    effArts: 1.0,
+    effSci: 1.0,
+    birthdayMonth: 0,
+    skipStudy: false
+};
+
+// 初始状态由模板深拷贝而来（两者永不漂移）
+let State = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
 function saveGame() {
     try { if (State.students && State.students.length > 0) localStorage.setItem('whk_save_v2', JSON.stringify(State)); } catch (e) {}
 }
 
+// 把一份存档合并成"完整的 State 形状"：老存档缺什么就补什么，
+// 已有的数值原样保留（不会被默认值覆盖）。纯函数，方便出错时单独排查。
+function migrateSave(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new Error('存档内容不是有效的对象');
+    }
+    const merged = Object.assign({}, DEFAULT_STATE, raw);
+    // 嵌套对象必须逐层合并：顶层 Object.assign 是浅拷贝，raw 里缺失的嵌套字段
+    // 会整体退回默认值，而缺失的子字段（如老存档的 fac.psy）也要在这里补齐
+    merged.weather = Object.assign({}, DEFAULT_STATE.weather, merged.weather || {});
+    merged.fac = Object.assign({}, DEFAULT_STATE.fac, merged.fac || {});
+    merged.tempAlloc = Object.assign({}, merged.tempAlloc || {});
+    merged.eventCooldowns = Object.assign({}, merged.eventCooldowns || {});
+    merged.birthdayTriggered = Object.assign({}, merged.birthdayTriggered || {});
+    merged.monthStartScores = Array.isArray(merged.monthStartScores) ? merged.monthStartScores : [];
+    merged.students = Array.isArray(merged.students) ? merged.students : [];
+
+    merged.students = merged.students.map(st => {
+        const s = Object.assign({}, DEFAULT_STUDENT, st || {});
+        s.history = Object.assign({}, DEFAULT_STUDENT.history, s.history || {});
+        s.history.scores = Array.isArray(s.history.scores) ? s.history.scores : [];
+        s.history.ranks = Array.isArray(s.history.ranks) ? s.history.ranks : [];
+        s.mastery = Object.assign({}, s.mastery || {});
+        // 六个科目 key 必须都在，缺失的补 0（老存档可能缺整块 mastery）
+        if (typeof CONFIG !== 'undefined' && CONFIG.SUBJECTS) {
+            CONFIG.SUBJECTS.forEach(sub => {
+                if (typeof s.mastery[sub.id] !== 'number') s.mastery[sub.id] = 0;
+            });
+        }
+        s.talents = Array.isArray(s.talents) ? s.talents : [];
+        return s;
+    });
+    return merged;
+}
+
 function checkSavedGame() {
+    const s = localStorage.getItem('whk_save_v2');
+    if (!s) return; // 没有存档：什么都不做，属于正常情况
     try {
-        const s = localStorage.getItem('whk_save_v2');
-        if (s) {
-            const btn = document.createElement('button');
-            btn.className = 'btn-action';
-            btn.style.marginTop = '12px';
-            btn.style.borderColor = 'var(--btn-accent)';
-            btn.style.textAlign = 'center';
-            btn.innerHTML = `<h5 style="color:var(--btn-accent);font-size:1.1em;justify-content:center;">继续游戏</h5><p>发现存档，点击恢复</p>`;
-            btn.onclick = () => {
-                const parsed = JSON.parse(s);
-                if (!parsed.eventCooldowns) parsed.eventCooldowns = {};
-                if (!parsed.fac.music) parsed.fac.music = 0;
-                if (!parsed.fac.psy) parsed.fac.psy = 0;
-                if (!parsed.birthdayTriggered) parsed.birthdayTriggered = {};
-                if (!parsed.monthStartScores) parsed.monthStartScores = [];
-                parsed.students.forEach(st => {
-                    if (typeof st.mood === 'undefined') st.mood = 60;
-                    if (typeof st.continuousGood === 'undefined') st.continuousGood = 0;
-                    if (typeof st.effArts === 'undefined') st.effArts = 1.0;
-                    if (typeof st.effSci === 'undefined') st.effSci = 1.0;
-                    if (!st.history) st.history = { scores: [], ranks: [] };
-                    if (!st.history.scores) st.history.scores = [];
-                    if (!st.history.ranks) st.history.ranks = [];
-                    if (typeof st.birthdayMonth === 'undefined') st.birthdayMonth = 0;
-                });
-                State = parsed;
+        const btn = document.createElement('button');
+        btn.className = 'btn-action';
+        btn.style.marginTop = '12px';
+        btn.style.borderColor = 'var(--btn-accent)';
+        btn.style.textAlign = 'center';
+        btn.innerHTML = `<h5 style="color:var(--btn-accent);font-size:1.1em;justify-content:center;">继续游戏</h5><p>发现存档，点击恢复</p>`;
+        btn.onclick = () => {
+            // 读档失败必须让玩家看到原因，不能再静默无反应
+            let parsed;
+            try {
+                parsed = migrateSave(JSON.parse(s));
+            } catch (e) {
+                console.error('[存档] 恢复失败：', e);
+                alert('存档已损坏或不兼容，无法继续游戏。\n请点击「重新开始」开始新的一局。\n\n（详情：' + e.message + '）');
+                return;
+            }
+            State = parsed;
+            try {
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('main-header').classList.remove('hidden');
                 document.getElementById('main-body').classList.remove('hidden');
@@ -1009,10 +1339,19 @@ function checkSavedGame() {
                     UI.showHelp();
                     localStorage.setItem('tutorial_shown', 'true');
                 }
-            };
-            document.getElementById('start-box-inner').appendChild(btn);
-        }
-    } catch (e) {}
+            } catch (e) {
+                console.error('[存档] 读档已合并但界面刷新失败：', e);
+                alert('存档已读取，但界面刷新失败：' + e.message + '\n请刷新页面重试。');
+            }
+        };
+        document.getElementById('start-box-inner').appendChild(btn);
+    } catch (e) {
+        // 生成「继续游戏」按钮本身失败：记录并告知玩家，避免毫无反应
+        console.error('[存档] 无法生成继续游戏按钮：', e);
+        try {
+            alert('检测到存档，但恢复入口创建失败：' + e.message + '\n请刷新页面重试，或重新开始新的一局。');
+        } catch (e2) { /* 连 alert 都不可用时只能保留 console.error */ }
+    }
 }
 
 function updateDiffBadge() {
@@ -1022,6 +1361,9 @@ function updateDiffBadge() {
     badge.className = 'diff-badge ' + (State.diff || 'normal');
 }
 
+// ============================================================
+// utils.js
+// ============================================================
 // ===== 工具函数 =====
 function getNormalEfficiency(score, cap) {
     const ratio = score / cap;
@@ -1048,7 +1390,10 @@ function getLevel(score, cap) {
 }
 
 // ============================================================
-// Game 对象
+// game.js
+// ============================================================
+// ============================================================
+// Game 对象 (修改)
 // ============================================================
 const Game = {
     _examWeek: 0,
@@ -1142,7 +1487,8 @@ const Game = {
                 mastery: mastery,
                 effArts: effArts,
                 effSci: effSci,
-                birthdayMonth: 0
+                birthdayMonth: 0,
+                skipStudy: false // 新增
             };
         });
 
@@ -1168,7 +1514,7 @@ const Game = {
                 let diffTotal = baseTotal - newTotal;
                 if (diffTotal > 0) s.mastery.mat = Math.min(150, s.mastery.mat + diffTotal);
                 else if (diffTotal < 0) s.mastery.mat = Math.max(20, s.mastery.mat + diffTotal);
-                this.log(`✨ 彩蛋：Snoozing 特殊属性已激活 (语文E，英语SSS，理科效率+20%，文科效率-99%)`, "[彩蛋]");
+                this.log(`✨ 彩蛋：Snoozing 特殊属性已激活 (语文E，英语SSS，理科效率+20%，文科效率-99%)`, "[彩蛋:语文比英语差这一块]");
             }
         });
 
@@ -1220,6 +1566,9 @@ const Game = {
         if (isArts) eff *= student.effArts;
         if (isSci) eff *= student.effSci;
         if (student.stress > 80) eff *= Math.max(0, 1 - (student.stress - 80) / 100);
+        if (student.skipStudy) { // 如果本周逃课，增益为0
+            return { gain: 0, efficiency: eff };
+        }
         return { gain: Math.max(0.02, baseGain * eff), efficiency: eff };
     },
 
@@ -1246,10 +1595,14 @@ const Game = {
             return alert("已经毕业啦！");
         }
 
+        // BUG-6 修复：用独立布尔标志表达「无限 AP」，不再把 ap 污染成字符串 'INF'。
+        // State.unlimitedAp 缺失（老存档）时按 false 处理，行为与修复前完全一致。
+        const infiniteAp = State.unlimitedAp === true;
+
         // ===== 勤工俭学 =====
         if (cat === 'work' && sub === 'earn') {
-            if (State.ap < 1) return alert("AP不足！");
-            State.ap -= 1;
+            if (!infiniteAp && State.ap < 1) return alert("AP不足！");
+            if (!infiniteAp) State.ap -= 1;
             State.money += 1000;
             this.log("💼 勤工俭学，赚取 ¥1000", "[资金]");
             UI.hideAllMenus();
@@ -1259,11 +1612,12 @@ const Game = {
         }
 
         if (cat === 'eff') {
-            if (State.money < 1500 || State.ap < 1) return alert("资源不足！");
-            State.money -= 1500; State.ap -= 1;
+            if (State.money < 1500 || (!infiniteAp && State.ap < 1)) return alert("资源不足！");
+            State.money -= 1500;
+            if (!infiniteAp) State.ap -= 1;
             State.students.forEach(s => {
-                if (sub === 'arts') s.effArts = Math.min(1.5, s.effArts + 0.05);
-                if (sub === 'sci') s.effSci = Math.min(1.5, s.effSci + 0.05);
+                if (sub === 'arts') s.effArts = Math.min(1.5, s.effArts + 0.08);
+                if (sub === 'sci') s.effSci = Math.min(1.5, s.effSci + 0.08);
             });
             this.log(`${sub === 'arts' ? '文' : '理'}科指导`, `[效率提升]`);
             UI.hideAllMenus();
@@ -1272,12 +1626,12 @@ const Game = {
             return;
         }
 
-        if (State.ap < 1) return alert("AP不足！");
+        if (!infiniteAp && State.ap < 1) return alert("AP不足！");
         let costAP = cat === 'train' ? 2 : (cat === 'intensive' ? 3 : 1);
         let costMoney = cat === 'train' ? 2000 : cat === 'intensive' ? 3000 : cat === 'test' ? 500 : (cat === 'rest' && sub === 'snack' ? 400 : (cat === 'rest' && sub === 'movie' ? 500 : 0));
-        if (State.ap < costAP) return alert("AP不足！");
+        if (!infiniteAp && State.ap < costAP) return alert("AP不足！");
         if (State.money < costMoney) return alert("班费不足！");
-        State.ap -= costAP;
+        if (!infiniteAp) State.ap -= costAP;
         if (costMoney > 0) State.money -= costMoney;
 
         const techBonus = 1 + (State.fac.tech * 0.15);
@@ -1285,6 +1639,12 @@ const Game = {
 
         State.students.forEach(s => {
             if (s.sickTimer > 0) return;
+            if (s.skipStudy) {
+                // 逃课学生不获得学习增益，但可能增加压力或降低心情
+                s.stress = Math.min(100, s.stress + 5);
+                s.mood = Math.max(0, s.mood - 3);
+                return; // 跳过该学生
+            }
             if (cat === 'study' || cat === 'test') {
                 let baseGain = (sub === 'chi' ? 1.2 : 2.0) * techBonus * diffMod;
                 if (cat === 'test') baseGain *= 1.3;
@@ -1318,7 +1678,7 @@ const Game = {
         let actionName = '';
         if (cat === 'study') actionName = '自习';
         else if (cat === 'test') actionName = '小测';
-        else if (cat === 'train') actionName = '特训';
+        else if (cat === 'train') actionName = '专项训练';
         else if (cat === 'intensive') actionName = '🔥特训';
         else if (cat === 'rest') {
             if (sub === 'walk') actionName = '散步';
@@ -1353,8 +1713,9 @@ const Game = {
             this.updateUI();
             return;
         }
-        if (State.money < 2500 || State.ap < 2) return alert("资源不足！");
-        State.money -= 2500; State.ap -= 2;
+        if (State.money < 2500 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 2500;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.students.forEach(s => {
             s.stress = 0;
             s.mood = Math.min(100, s.mood + 20);
@@ -1368,8 +1729,9 @@ const Game = {
 
     doMockExam() {
         if (State.isGraduated) return alert("已经毕业啦！");
-        if (State.money < 4000 || State.ap < 2) return alert("资源不足！");
-        State.money -= 4000; State.ap -= 2;
+        if (State.money < 4000 || (!(State.unlimitedAp === true) && State.ap < 2)) return alert("资源不足！");
+        State.money -= 4000;
+        if (!(State.unlimitedAp === true)) State.ap -= 2;
         State.isMockExam = true;
         this.log("全真模拟考！", "[实战]");
         this.prepareExam("模拟考试", true);
@@ -1553,6 +1915,7 @@ const Game = {
         if (pts > 0) { alert("请分配完所有点数！"); return; }
         State.students.forEach(s => {
             if (s.sickTimer > 0) return;
+            if (s.skipStudy) return; // 逃课学生不获得周考加成
             for (const k in State.tempAlloc) {
                 if (State.tempAlloc[k] > 0) {
                     const cap = CONFIG.SUBJECTS.find(x => x.id === k).cap;
@@ -1567,11 +1930,72 @@ const Game = {
 
     finishTurnLogic() {
         if (State.isGraduated) return;
+
+        // ===== 事件冷却递减（BUG-3 修复）=====
+        // 时序推理（位置：本函数开头，且必须早于下方 60% 触发判定）：
+        //   1) 冷却只在「成功触发某个事件」时置为 3（见 triggerEnhancedEvent）。
+        //   2) 第 N 回合触发（cd=3）后：
+        //        N+1 回合开头减到 2 → 过滤时 2 为真值 → 禁用
+        //        N+2 回合开头减到 1 → 过滤时 1 为真值 → 禁用
+        //        N+3 回合开头减到 0 → delete，本回合的触发判定里已重新可选
+        //      即「触发后隔 3 个回合可再次抽中」，事件系统不会再永久枯竭。
+        //      注：严格被整回合禁用的是 N+1、N+2 两个回合，N+3 即恢复 ——
+        //      这是把递减放在「判定之前」的必然结果，与「放到判定之后（函数末尾）」
+        //      只差一回合，语义在同一量级，不改。
+        //   3) 为什么不挪到 nextTurn() 开头：
+        //      nextTurn 的 week===2 分支只弹周考面板然后 return，要等用户点
+        //      confirmWeekly() 才结算；若用户没分配完点数，confirmWeekly 会
+        //      alert 后 return（不结算），此时「已递减但未结算」就错位了。
+        //      放在 finishTurnLogic 开头能保证「递减」与「结算+触发判定」严格同批次。
+        //   4) 月末考试周（nextTurn 的 week>4 分支，月考/高考）直接 return，
+        //      不调用 finishTurnLogic，因此该周不递减。但该周同样不会触发事件
+        //      （60% 触发判定就写在 finishTurnLogic 里），所以只会让恢复慢 1 个回合，
+        //      绝不会重新出现「13 个事件全部点完后永久枯竭」的原 BUG。属可接受取舍。
+        //   5) 降到 0 时 delete 键，避免 eventCooldowns 里堆积 0 值键
+        //      （虽然 0 是 falsy 也能通过过滤，但残留键会让调试面板/存档出现脏数据）。
+        if (!State.eventCooldowns) State.eventCooldowns = {}; // 老存档兜底
+        Object.keys(State.eventCooldowns).forEach(k => {
+            const next = (Number(State.eventCooldowns[k]) || 0) - 1;
+            if (next <= 0) delete State.eventCooldowns[k];
+            else State.eventCooldowns[k] = next;
+        });
+
         State.ap = State.maxAp;
-        State.money += 300 + (State.students.length * 60);
+        // ===== 经济修改：按难度 =====
+        let income = 1000; // 默认普通
+        if (State.diff === 'easy') income = 1500;
+        else if (State.diff === 'hard') income = 500;
+        State.money += income;
+
         const moodRegen = State.fac.music * 5;
         const stressRed = State.fac.psy * 8;
 
+        // ===== 网瘾机制 =====
+        // 1. 重置所有学生的 skipStudy
+        State.students.forEach(s => s.skipStudy = false);
+        // 2. 处理网瘾逃课和传播
+        let addicts = State.students.filter(s => s.talents.some(t => t.id === 'n4'));
+        addicts.forEach(s => {
+            // 20% 概率翘课
+            if (Math.random() < 0.20) {
+                s.skipStudy = true;
+                s.stress = Math.min(100, s.stress + 10);
+                s.mood = Math.max(0, s.mood - 5);
+                this.log(`${s.name} 因网瘾逃课打游戏！`, "[网瘾]");
+            }
+            // 10% 概率传播给随机一个无网瘾的学生
+            let candidates = State.students.filter(st => st !== s && !st.talents.some(t => t.id === 'n4'));
+            if (candidates.length > 0 && Math.random() < 0.10) {
+                let target = candidates[Math.floor(Math.random() * candidates.length)];
+                // 添加网瘾特质（如果未满6个且没有该特质）
+                if (target.talents.length < 6 && !target.talents.some(t => t.id === 'n4')) {
+                    target.talents.push({ id: 'n4', n: '网瘾', t: 'neg', cost: -0.6, type: 'sci', d: '有概率翘课打游戏，且可能传播' });
+                    this.log(`${target.name} 被 ${s.name} 传染了网瘾！`, "[网瘾传播]");
+                }
+            }
+        });
+
+        // 正常状态恢复
         State.students.forEach(s => {
             const baseDecay = s.talents.some(t => t.id === 't3') ? 8 : 4;
             s.stress = Math.max(0, s.stress - baseDecay - stressRed);
@@ -1586,6 +2010,7 @@ const Game = {
             }
         });
 
+        // 心情特质
         State.students.forEach(s => {
             if (s.mood >= 80 && Math.random() < 0.30) {
                 const posTalents = CONFIG.TALENTS.filter(t => t.t === 'pos');
@@ -1593,7 +2018,7 @@ const Game = {
                 if (available.length > 0 && s.talents.length < 6) {
                     const newT = available[Math.floor(Math.random() * available.length)];
                     s.talents.push({ ...newT });
-                    this.log(`${s.name} 因心情极佳，获得了特质【${newT.n}】`, "[心情特质]");
+                    this.log(`${s.name} 因近日情绪极佳，获得了特质【${newT.n}】`, "[心情特质]");
                 }
             } else if (s.mood <= 20 && Math.random() < 0.30) {
                 const negTalents = CONFIG.TALENTS.filter(t => t.t === 'neg');
@@ -1601,11 +2026,12 @@ const Game = {
                 if (available.length > 0 && s.talents.length < 6) {
                     const newT = available[Math.floor(Math.random() * available.length)];
                     s.talents.push({ ...newT });
-                    this.log(`${s.name} 因心情极差，获得了负面特质【${newT.n}】`, "[心情特质]");
+                    this.log(`${s.name} 因近日情绪奇差，获得了负面特质【${newT.n}】`, "[心情特质]");
                 }
             }
         });
 
+        // 事件触发（60%概率）
         if (Math.random() < 0.60) {
             this.triggerEnhancedEvent();
         }
@@ -1615,7 +2041,13 @@ const Game = {
     },
 
     triggerEnhancedEvent() {
-        const available = CONFIG.EVENTS.filter(e => !State.eventCooldowns[e.id]);
+        // 过滤掉冷却中的事件
+        let available = CONFIG.EVENTS.filter(e => !State.eventCooldowns[e.id]);
+        // 针对网瘾事件，如果班级没有网瘾学生则不触发 ev13
+        const hasAddict = State.students.some(s => s.talents.some(t => t.id === 'n4'));
+        if (!hasAddict) {
+            available = available.filter(e => e.id !== 'ev13');
+        }
         if (available.length === 0) return;
         const ev = available[Math.floor(Math.random() * available.length)];
         State.eventCooldowns[ev.id] = 3;
@@ -1642,8 +2074,22 @@ const Game = {
     },
 
     updateWeather() {
-        State.season = SEASONS[State.month.toString()];
-        State.weather = WEATHER_POOL[State.season][Math.floor(Math.random() * WEATHER_POOL[State.season].length)];
+        // BUG-5 修复：SEASONS 只配置了 8~6 月共 11 个键，没有 '7'。
+        // 调试面板的月份输入是 1..12（7 是合法输入），month=0/13 等越界值也可能被存档导入带进来，
+        // 此时 SEASONS[...] 为 undefined → WEATHER_POOL[undefined].length 抛 TypeError。
+        // 这里做两级兜底：季节回退到 '秋'，天气数组为空时再回退到默认天气对象。
+        // 注意：不改 config.js（那是另一个队员的文件），只在 game.js 内防御。
+        const DEFAULT_WEATHER = { i: '☀️', n: '晴朗', eff: '' };
+        const key = String(State.month);
+        let season = SEASONS[key];
+        if (!season) season = SEASONS['8'] || '秋'; // 未知月份统一回退到 8 月所属的「秋」
+        State.season = season;
+        const pool = WEATHER_POOL[season];
+        if (!pool || pool.length === 0) {
+            State.weather = DEFAULT_WEATHER; // 万一天气池没配置该季节，也不能崩
+        } else {
+            State.weather = pool[Math.floor(Math.random() * pool.length)];
+        }
     },
 
     getRealRank(score) {
@@ -1922,7 +2368,12 @@ const Game = {
 
     returnToClass() {
         document.getElementById('ending-modal').classList.add('hidden');
-        State.ap = 'INF';
+        // BUG-6 修复：原来写 State.ap = 'INF'（字符串），
+        // 会导致 'INF' - costAP === NaN 且被 JSON.stringify 原样落盘成 "ap": "INF"。
+        // 改为独立布尔标志 unlimitedAp，ap 始终保持数字（存档自洽）。
+        // 老存档没有该字段时，所有读取处都用 === true 判断，缺失即按 false 处理。
+        State.unlimitedAp = true;
+        State.ap = State.maxAp;
         document.getElementById('ui-ap').innerText = 'INF';
         document.getElementById('ap-max-txt').innerText = '';
         document.getElementById('btn-next-turn').innerText = '已毕业 🎓';
@@ -1976,7 +2427,10 @@ const Game = {
         document.getElementById('countdown').textContent = `⏳ 剩余 ${totalWeeks} 周`;
     }
 };
-// ===== 图表配置 =====
+// ============================================================
+// chart.js
+// ============================================================
+// ===== 图表配置（不变） =====
 const ChartColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 let ChartState = [true, true, true, true, true, true];
 let ChartHoverData = [];
@@ -2272,6 +2726,599 @@ document.addEventListener('mousemove', function(e) {
 });
 
 // ===== 启动 =====
+// ============================================================
+// debug.js
+// ============================================================
+// ============================================================
+// 调试面板（dev-tools）
+// ============================================================
+// 触发方式：按 D 键 → 3 秒内依次输入 y c 6 n → 自动弹出面板
+//
+// 设计要点：
+//   1. 全程不影响正常游戏：不在输入框里时按 D 才记录，输入框内打字会被忽略
+//   2. 单键 'd' 不会被任何现有功能占用（本项目此前没有任何键盘监听）
+//   3. 面板只在内存里操作 State，所有改动都走 saveGame() + Game.updateUI()
+//   4. 不引入任何外部依赖，符合 file:// 单文件约束
+
+const DebugPanel = {
+    // ---- 触发序列 ----
+    SECRET: ['y', 'c', '6', 'n'],
+    TRIGGER_KEY: 'd',
+    WINDOW_MS: 3000,
+
+    _armed: false,      // 是否已按下 D，等待输入暗号
+    _armedAt: 0,        // 按下 D 的时间戳
+    _progress: [],      // 暗号已匹配到第几位
+    _timer: null,       // 3 秒倒计时
+    _installed: false,
+    _open: false,
+
+    // ============================================================
+    // 安装键盘监听
+    // ============================================================
+    install() {
+        if (this._installed) return;
+        this._installed = true;
+        document.addEventListener('keydown', (e) => this.onKeyDown(e), true);
+    },
+
+    /** 当前焦点是否在可输入元素里（避免抢用户打字） */
+    _isTyping() {
+        const el = document.activeElement;
+        if (!el) return false;
+        const tag = (el.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+        if (el.isContentEditable) return true;
+        return false;
+    },
+
+    onKeyDown(e) {
+        // 允许 Esc 直接关闭面板（无论焦点在哪）
+        if (e.key === 'Escape' && this._open) {
+            this.close();
+            return;
+        }
+        // 带修饰键的组合（Ctrl+D 收藏等）不拦截，交还浏览器
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        // 正在输入框里打字 → 完全不干预
+        if (this._isTyping()) return;
+
+        const key = (e.key || '').toLowerCase();
+
+        // ---- 第一击：D ----
+        if (!this._armed) {
+            if (key === this.TRIGGER_KEY) {
+                this._arm();
+                e.preventDefault();
+            }
+            return;
+        }
+
+        // ---- 已进入 3 秒窗口，匹配暗号 ----
+        this._matchSecret(key, e);
+    },
+
+    // ============================================================
+    // 触发逻辑
+    // ============================================================
+    _arm() {
+        this._armed = true;
+        this._armedAt = Date.now();
+        this._progress = [];
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => this._disarm(), this.WINDOW_MS);
+    },
+
+    _matchSecret(key, e) {
+        const elapsed = Date.now() - this._armedAt;
+        if (elapsed > this.WINDOW_MS) {
+            this._disarm();
+            return;
+        }
+
+        const expect = this.SECRET[this._progress.length];
+        if (key === expect) {
+            this._progress.push(key);
+            e.preventDefault();
+
+            if (this._progress.length === this.SECRET.length) {
+                // 全中
+                this._disarm();
+                this.open();
+            }
+        } else {
+            // 输错即作废：立刻取消，必须重新按 D 开始。
+            // （这是开发者工具，宽松匹配没有必要，严格更可预期。）
+            this._disarm();
+        }
+    },
+
+    _disarm() {
+        this._armed = false;
+        this._progress = [];
+        clearTimeout(this._timer);
+        this._timer = null;
+    },
+
+    // ============================================================
+    // 面板开关
+    // ============================================================
+    open() {
+        let el = document.getElementById('debug-panel');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'debug-panel';
+            el.className = 'overlay hidden';
+            document.body.appendChild(el);
+        }
+        el.innerHTML = this.render();
+        el.classList.remove('hidden');
+        this._open = true;
+        // 首次打开时必须主动渲染默认标签页的内容，
+        // 否则 #dbg-body 是空的，要切一次标签才出现。
+        this._tab = this._tab || 'res';
+        this.renderBody();
+        this.refreshLive();
+    },
+
+    close() {
+        const el = document.getElementById('debug-panel');
+        if (el) el.classList.add('hidden');
+        this._open = false;
+    },
+
+    /** 是否已开局（没开局时很多操作没有意义） */
+    _started() {
+        return !!(State.students && State.students.length);
+    },
+
+    // ============================================================
+    // 渲染
+    // ============================================================
+    render() {
+        const started = this._started();
+        const warn = started ? '' :
+            `<div class="dbg-warn">⚠️ 尚未开局：请先在开始界面点「开始游戏」，否则下列多数操作无效。</div>`;
+
+        return `
+        <div class="modal-box dbg-box">
+            <div class="dbg-head">
+                <h2 class="modal-title" style="margin:0;">🛠️ 调试面板</h2>
+                <button class="dbg-close" onclick="DebugPanel.close()" title="Esc 关闭">✕</button>
+            </div>
+            ${warn}
+            <div class="dbg-tabs">
+                <button class="dbg-tab active" data-dbg-tab="res" onclick="DebugPanel.tab('res')">💰 资源</button>
+                <button class="dbg-tab" data-dbg-tab="stu" onclick="DebugPanel.tab('stu')">👥 学生</button>
+                <button class="dbg-tab" data-dbg-tab="fac" onclick="DebugPanel.tab('fac')">🏫 设施</button>
+                <button class="dbg-tab" data-dbg-tab="time" onclick="DebugPanel.tab('time')">📅 时间</button>
+                <button class="dbg-tab" data-dbg-tab="raw" onclick="DebugPanel.tab('raw')">📋 状态</button>
+            </div>
+            <div class="dbg-body" id="dbg-body"></div>
+            <div class="dbg-foot">
+                <span class="dbg-live" id="dbg-live"></span>
+                <button class="dbg-btn dbg-btn-danger" onclick="DebugPanel.resetProgress()">重新开局</button>
+                <button class="dbg-btn" onclick="DebugPanel.clearSave()">清存档</button>
+            </div>
+        </div>`;
+    },
+
+    tab(name) {
+        document.querySelectorAll('#debug-panel .dbg-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.dbgTab === name);
+        });
+        this._tab = name;
+        this.renderBody();
+    },
+
+    renderBody() {
+        const body = document.getElementById('dbg-body');
+        if (!body) return;
+        const t = this._tab || 'res';
+        if (t === 'res') body.innerHTML = this.viewRes();
+        else if (t === 'stu') body.innerHTML = this.viewStu();
+        else if (t === 'fac') body.innerHTML = this.viewFac();
+        else if (t === 'time') body.innerHTML = this.viewTime();
+        else body.innerHTML = this.viewRaw();
+    },
+
+    // ---------- 资源 ----------
+    viewRes() {
+        const g = (id, label, val, step) => `
+            <div class="dbg-row">
+                <label>${label}</label>
+                <input type="number" id="${id}" class="dbg-num" value="${val}" step="${step || 1}">
+                <button class="dbg-btn" onclick="DebugPanel.applyNum('${id}')">设置</button>
+            </div>`;
+        return `
+            <div class="dbg-sec">
+                ${g('dbg-money', '💰 金钱 ¥', Math.round(State.money || 0), 100)}
+                ${g('dbg-ap', '⚡ 行动力 AP', State.ap ?? 0, 1)}
+                ${g('dbg-maxap', '⚡ AP 上限', State.maxAp ?? 3, 1)}
+            </div>
+            <div class="dbg-sec dbg-quick">
+                <button class="dbg-btn" onclick="DebugPanel.addMoney(1000)">+¥1000</button>
+                <button class="dbg-btn" onclick="DebugPanel.addMoney(10000)">+¥10000</button>
+                <button class="dbg-btn" onclick="DebugPanel.setAp(99)">AP 拉满</button>
+            </div>
+            <div class="dbg-sec">
+                <div class="dbg-row">
+                    <label>难度</label>
+                    <select id="dbg-diff" class="dbg-num">
+                        ${['easy', 'normal', 'hard'].map(d =>
+                            `<option value="${d}"${State.diff === d ? ' selected' : ''}>${({ easy: '简单', normal: '普通', hard: '困难' })[d]}</option>`).join('')}
+                    </select>
+                    <button class="dbg-btn" onclick="DebugPanel.applyDiff()">应用</button>
+                </div>
+            </div>`;
+    },
+
+    // ---------- 学生 ----------
+    viewStu() {
+        if (!this._started()) return `<div class="dbg-empty">尚未开局</div>`;
+        const subIds = CONFIG.SUBJECTS.map(s => s.id);
+        const rows = State.students.map((s, i) => {
+            const total = Object.values(s.mastery).reduce((a, b) => a + b, 0);
+            const subs = CONFIG.SUBJECTS.map(sub => `
+                <div class="dbg-subrow">
+                    <span class="dbg-subname">${sub.n}</span>
+                    <input type="number" class="dbg-mini" id="dbg-m-${i}-${sub.id}"
+                           value="${Math.round(s.mastery[sub.id] || 0)}" step="5" min="0" max="${sub.cap}">
+                    <span class="dbg-cap">/${sub.cap}</span>
+                </div>`).join('');
+            return `
+            <div class="dbg-stu">
+                <div class="dbg-stu-head">
+                    <strong>${i + 1}. ${s.name}</strong>
+                    <span class="dbg-total">总分 ${Math.round(total)}</span>
+                </div>
+                <div class="dbg-meters">
+                    <div class="dbg-row">
+                        <label>压力</label>
+                        <input type="number" class="dbg-num" id="dbg-stress-${i}" value="${Math.round(s.stress)}" step="5">
+                        <button class="dbg-btn" onclick="DebugPanel.setStress(${i},0)">归零</button>
+                    </div>
+                    <div class="dbg-row">
+                        <label>心情</label>
+                        <input type="number" class="dbg-num" id="dbg-mood-${i}" value="${Math.round(s.mood)}" step="5">
+                        <button class="dbg-btn" onclick="DebugPanel.setMood(${i},100)">拉满</button>
+                    </div>
+                    <div class="dbg-row">
+                        <label>病假</label>
+                        <input type="number" class="dbg-num" id="dbg-sick-${i}" value="${s.sickTimer || 0}" step="1">
+                        <button class="dbg-btn" onclick="DebugPanel.heal(${i})">治愈</button>
+                    </div>
+                </div>
+                <div class="dbg-subs">${subs}</div>
+                <div class="dbg-tags">天赋：${(s.talents || []).map(t => `<span class="dbg-tag">${t.n}</span>`).join('') || '无'}</div>
+                <div class="dbg-quick">
+                    <button class="dbg-btn" onclick="DebugPanel.setAllSubjects(${i},0.95)">全科 95%</button>
+                    <button class="dbg-btn" onclick="DebugPanel.setAllSubjects(${i},0.60)">全科 60%</button>
+                    <button class="dbg-btn" onclick="DebugPanel.applyStu(${i})">应用本卡</button>
+                </div>
+            </div>`;
+        }).join('');
+        return `<div class="dbg-sec">${rows}</div>
+            <div class="dbg-sec dbg-quick">
+                <button class="dbg-btn" onclick="DebugPanel.allStress(0)">全班压力归零</button>
+                <button class="dbg-btn" onclick="DebugPanel.allMood(100)">全班心情拉满</button>
+                <button class="dbg-btn" onclick="DebugPanel.clearNegTalents()">清除全班负面天赋</button>
+            </div>`;
+    },
+
+    // ---------- 设施 ----------
+    viewFac() {
+        const rows = CONFIG.FACILITIES.map(f => {
+            const lv = State.fac[f.id] || 0;
+            const max = f.lv.length - 1;
+            return `
+            <div class="dbg-row">
+                <label>${f.n}</label>
+                <span class="dbg-faclv">Lv.${lv} / ${max}　${f.lv[lv] || '—'}</span>
+                <button class="dbg-btn" onclick="DebugPanel.setFac('${f.id}',${Math.min(max, lv + 1)})">+1</button>
+                <button class="dbg-btn" onclick="DebugPanel.setFac('${f.id}',${max})">满级</button>
+                <button class="dbg-btn" onclick="DebugPanel.setFac('${f.id}',0)">归零</button>
+            </div>`;
+        }).join('');
+        return `<div class="dbg-sec">${rows}</div>
+            <div class="dbg-sec dbg-quick">
+                <button class="dbg-btn" onclick="DebugPanel.allFacMax()">全部满级</button>
+                <button class="dbg-btn" onclick="DebugPanel.allFacZero()">全部归零</button>
+            </div>`;
+    },
+
+    // ---------- 时间 ----------
+    viewTime() {
+        return `
+            <div class="dbg-sec">
+                <div class="dbg-row">
+                    <label>年</label><input type="number" class="dbg-num" id="dbg-y" value="${State.year}" step="1">
+                </div>
+                <div class="dbg-row">
+                    <label>月</label><input type="number" class="dbg-num" id="dbg-mo" value="${State.month}" step="1" min="1" max="12">
+                </div>
+                <div class="dbg-row">
+                    <label>周</label><input type="number" class="dbg-num" id="dbg-wk" value="${State.week}" step="1" min="1" max="4">
+                </div>
+                <button class="dbg-btn" onclick="DebugPanel.applyTime()">应用时间</button>
+            </div>
+            <div class="dbg-sec dbg-quick">
+                <button class="dbg-btn" onclick="DebugPanel.advanceMonth(1)">+1 月</button>
+                <button class="dbg-btn" onclick="DebugPanel.advanceMonth(3)">+3 月</button>
+                <button class="dbg-btn" onclick="DebugPanel.jumpToGaokao()">⏩ 跳到高考</button>
+            </div>
+            <div class="dbg-sec dbg-quick">
+                <button class="dbg-btn" onclick="Game.prepareExam('调试月考')">立即触发月考</button>
+                <button class="dbg-btn" onclick="DebugPanel.cooldownReset()">清空事件冷却</button>
+            </div>`;
+    },
+
+    // ---------- 原始状态 ----------
+    viewRaw() {
+        let json = '';
+        try { json = JSON.stringify(State, null, 2); } catch (e) { json = String(e); }
+        return `
+            <div class="dbg-sec">
+                <div class="dbg-quick" style="margin-bottom:8px;">
+                    <button class="dbg-btn" onclick="DebugPanel.copyState()">复制 JSON</button>
+                    <button class="dbg-btn" onclick="DebugPanel.renderBody()">刷新</button>
+                </div>
+                <textarea class="dbg-json" id="dbg-json" spellcheck="false">${json.replace(/</g, '&lt;')}</textarea>
+                <button class="dbg-btn dbg-btn-danger" onclick="DebugPanel.importState()">导入上面的 JSON</button>
+            </div>`;
+    },
+
+    // ============================================================
+    // 操作实现
+    // ============================================================
+    /** 改动后统一收尾：存档 + 刷新界面 */
+    _commit(msg) {
+        try { saveGame(); } catch (e) { }
+        try { Game.updateUI(); } catch (e) { }
+        try { Game.updateCountdown(); } catch (e) { }
+        this.refreshLive();
+        if (msg) {
+            try { Game.log(`[调试] ${msg}`, "[调试]"); } catch (e) { }
+        }
+    },
+
+    _num(id, fallback) {
+        const el = document.getElementById(id);
+        if (!el) return fallback;
+        const v = parseFloat(el.value);
+        return isNaN(v) ? fallback : v;
+    },
+
+    applyNum(id) {
+        const v = this._num(id, null);
+        if (v === null) return;
+        if (id === 'dbg-money') { State.money = Math.round(v); this._commit(`金钱 → ¥${State.money}`); }
+        else if (id === 'dbg-ap') { State.ap = Math.max(0, Math.round(v)); this._commit(`AP → ${State.ap}`); }
+        else if (id === 'dbg-maxap') { State.maxAp = Math.max(1, Math.round(v)); this._commit(`AP 上限 → ${State.maxAp}`); }
+    },
+
+    addMoney(n) {
+        State.money = Math.round((State.money || 0) + n);
+        this._commit(`金钱 +${n} → ¥${State.money}`);
+        this.renderBody();
+    },
+
+    setAp(n) {
+        State.ap = n;
+        this._commit(`AP → ${n}`);
+        this.renderBody();
+    },
+
+    applyDiff() {
+        const el = document.getElementById('dbg-diff');
+        if (!el) return;
+        State.diff = el.value;
+        State.mode = el.value;
+        try { updateDiffBadge(); } catch (e) { }
+        this._commit(`难度 → ${el.value}`);
+    },
+
+    // ---- 学生 ----
+    setStress(i, v) {
+        const s = State.students[i];
+        if (!s) return;
+        s.stress = v;
+        this._commit(`${s.name} 压力 → ${v}`);
+        this.renderBody();
+    },
+
+    setMood(i, v) {
+        const s = State.students[i];
+        if (!s) return;
+        s.mood = v;
+        this._commit(`${s.name} 心情 → ${v}`);
+        this.renderBody();
+    },
+
+    heal(i) {
+        const s = State.students[i];
+        if (!s) return;
+        s.sickTimer = 0;
+        this._commit(`${s.name} 已治愈`);
+        this.renderBody();
+    },
+
+    setAllSubjects(i, ratio) {
+        const s = State.students[i];
+        if (!s) return;
+        CONFIG.SUBJECTS.forEach(sub => {
+            s.mastery[sub.id] = Math.round(sub.cap * ratio);
+        });
+        this._commit(`${s.name} 全科 → ${Math.round(ratio * 100)}%`);
+        this.renderBody();
+    },
+
+    /** 把某张学生卡片上所有输入框的值一次性写回 */
+    applyStu(i) {
+        const s = State.students[i];
+        if (!s) return;
+
+        const stress = this._num(`dbg-stress-${i}`, null);
+        const mood = this._num(`dbg-mood-${i}`, null);
+        const sick = this._num(`dbg-sick-${i}`, null);
+        if (stress !== null) s.stress = Math.max(0, Math.min(100, stress));
+        if (mood !== null) s.mood = Math.max(0, Math.min(100, mood));
+        if (sick !== null) s.sickTimer = Math.max(0, Math.round(sick));
+
+        CONFIG.SUBJECTS.forEach(sub => {
+            const v = this._num(`dbg-m-${i}-${sub.id}`, null);
+            if (v !== null) {
+                s.mastery[sub.id] = Math.max(0, Math.min(sub.cap, v));
+            }
+        });
+        this._commit(`${s.name} 已应用`);
+        this.renderBody();
+    },
+
+    allStress(v) {
+        State.students.forEach(s => { s.stress = v; });
+        this._commit(`全班压力 → ${v}`);
+        this.renderBody();
+    },
+
+    allMood(v) {
+        State.students.forEach(s => { s.mood = v; });
+        this._commit(`全班心情 → ${v}`);
+        this.renderBody();
+    },
+
+    clearNegTalents() {
+        const negIds = CONFIG.TALENTS.filter(t => t.t === 'neg').map(t => t.id);
+        let n = 0;
+        State.students.forEach(s => {
+            const before = s.talents.length;
+            s.talents = s.talents.filter(t => !negIds.includes(t.id));
+            n += before - s.talents.length;
+        });
+        this._commit(`清除 ${n} 个负面天赋`);
+        this.renderBody();
+    },
+
+    // ---- 设施 ----
+    setFac(id, lv) {
+        State.fac[id] = lv;
+        this._commit(`设施 ${id} → Lv.${lv}`);
+        this.renderBody();
+    },
+
+    allFacMax() {
+        CONFIG.FACILITIES.forEach(f => { State.fac[f.id] = f.lv.length - 1; });
+        this._commit('全部设施满级');
+        this.renderBody();
+    },
+
+    allFacZero() {
+        CONFIG.FACILITIES.forEach(f => { State.fac[f.id] = 0; });
+        this._commit('全部设施归零');
+        this.renderBody();
+    },
+
+    // ---- 时间 ----
+    applyTime() {
+        const y = this._num('dbg-y', null);
+        const mo = this._num('dbg-mo', null);
+        const wk = this._num('dbg-wk', null);
+        if (y !== null) State.year = Math.round(y);
+        if (mo !== null) State.month = Math.max(1, Math.min(12, Math.round(mo)));
+        if (wk !== null) State.week = Math.max(1, Math.min(4, Math.round(wk)));
+        this._commit(`时间 → ${State.year}/${State.month} W${State.week}`);
+        this.renderBody();
+    },
+
+    advanceMonth(n) {
+        let m = State.month + n;
+        let y = State.year;
+        while (m > 12) { m -= 12; y++; }
+        State.month = m;
+        State.year = y;
+        const s = SEASONS[String(m)];
+        if (s) State.season = s;
+        this._commit(`时间 +${n} 月 → ${State.year}/${State.month}`);
+        this.renderBody();
+    },
+
+    jumpToGaokao() {
+        State.year = 2026;
+        State.month = 6;
+        State.week = 1;
+        State.season = SEASONS['6'] || '夏';
+        this._commit('已跳到 2026/6 高考周');
+        this.renderBody();
+    },
+
+    cooldownReset() {
+        State.eventCooldowns = {};
+        this._commit('事件冷却已清空');
+        this.renderBody();
+    },
+
+    // ---- 原始状态 ----
+    copyState() {
+        const ta = document.getElementById('dbg-json');
+        if (!ta) return;
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        if (!ok && navigator.clipboard) {
+            navigator.clipboard.writeText(ta.value).catch(() => { });
+        }
+        try { Game.log('[调试] 状态 JSON 已复制到剪贴板', "[调试]"); } catch (e) { }
+    },
+
+    importState() {
+        const ta = document.getElementById('dbg-json');
+        if (!ta) return;
+        if (!confirm('导入会覆盖当前全部进度，确定？')) return;
+        let parsed;
+        try {
+            parsed = JSON.parse(ta.value);
+        } catch (e) {
+            alert('JSON 解析失败：' + e.message);
+            return;
+        }
+        State = parsed;
+        this._commit('已导入状态');
+        this.renderBody();
+    },
+
+    // ============================================================
+    // 底部实时信息
+    // ============================================================
+    refreshLive() {
+        const el = document.getElementById('dbg-live');
+        if (!el) return;
+        const avg = this._started()
+            ? Math.round(State.students.reduce((a, s) => a + Object.values(s.mastery).reduce((x, y) => x + y, 0), 0) / State.students.length)
+            : '—';
+        el.textContent = `${State.year}/${State.month} W${State.week}　¥${Math.round(State.money || 0)}　AP ${State.ap}/${State.maxAp}　均分 ${avg}`;
+    },
+
+    // ============================================================
+    // 危险操作
+    // ============================================================
+    resetProgress() {
+        if (!confirm('确定要重新开局吗？当前进度会丢失（存档也会清除）。')) return;
+        this.close();
+        try { localStorage.removeItem('whk_save_v2'); } catch (e) { }
+        location.reload();
+    },
+
+    clearSave() {
+        if (!confirm('确定清除存档吗？（当前这局仍可继续，刷新后丢失）')) return;
+        try { localStorage.removeItem('whk_save_v2'); } catch (e) { }
+        alert('存档已清除。');
+    }
+};
+
+DebugPanel.install();
+// ============================================================
+// boot.js
+// ============================================================
 window.onload = () => {
     checkSavedGame();
     document.querySelector('.mode-btn[data-mode="normal"]')?.classList.add('selected');

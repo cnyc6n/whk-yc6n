@@ -52,11 +52,13 @@
             --bg-sidebar: #1e293b;
             --bg-log: #0f172a;
             --bg-input: #334155;
+            --bg-hover: #2d3a4f;
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
             --text-log: #f8fafc;
             --border-color: #334155;
+            --shadow-color: rgba(0,0,0,0.35);
             --shadow-heavy: rgba(0,0,0,0.5);
             --overlay-bg: rgba(0,0,0,0.92);
             --scrollbar-track: #1e293b;
@@ -68,9 +70,13 @@
             --tag-neg-border: #991b1b;
             --tag-neg-text: #fca5a5;
             --btn-primary: #334155;
+            --btn-primary-hover: #475569;
             --btn-danger: #dc2626;
+            --btn-danger-hover: #b91c1c;
             --btn-success: #059669;
+            --btn-success-hover: #047857;
             --btn-accent: #3b82f6;
+            --btn-accent-hover: #2563eb;
             --chart-grid: #475569;
             --chart-text: #94a3b8;
             --modal-bg: #1e293b;
@@ -83,7 +89,7 @@
             --cost-text: #fbbf24;
             --log-border: rgba(255,255,255,0.1);
             --gold-color: #fbbf24;
-            --log-time: #64748b;
+            --log-time: #94a3b8;
         }
         * { box-sizing: border-box; font-family: 'Segoe UI','Microsoft YaHei',sans-serif; transition: background-color .3s, color .3s, border-color .3s, box-shadow .3s; }
         body { background: var(--bg-primary); color: var(--text-primary); margin:0; display:flex; justify-content:center; min-height:100vh; overflow:hidden; }
