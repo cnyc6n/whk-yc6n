@@ -278,14 +278,25 @@ const UI = {
                     fn(target);
                     // ===== 钳制压力、心情与各科成绩 =====
                     clampStudentState(target);
+                    // ===== 心理危机：压力已满仍被加压 → 触发预警/悲剧（来自 nanfa 改版） =====
+                    if (target.stress < 100) target._brokeDown = false;
+                    if (oldStress >= 100 && target.stress >= oldStress) Game.registerBreakdown(target);
                     const stressChange = target.stress - oldStress;
                     const moodChange = target.mood - oldMood;
                     effectDesc += `影响学生 ${target.name}：压力${stressChange >= 0 ? '+' : ''}${Math.round(stressChange)}%，心情${moodChange >= 0 ? '+' : ''}${Math.round(moodChange)}%`;
                 }
             } else {
+                // 记录加压前全班压力，用于心理危机判断
+                const beforeStress = {};
+                State.students.forEach(st => { beforeStress[st.name] = st.stress; });
                 fn();
                 // ===== 全班钳制（压力/心情/成绩） =====
-                State.students.forEach(st => clampStudentState(st));
+                State.students.forEach(st => {
+                    clampStudentState(st);
+                    // ===== 心理危机：压力已满仍被加压 → 触发预警/悲剧（来自 nanfa 改版） =====
+                    if (st.stress < 100) st._brokeDown = false;
+                    if (beforeStress[st.name] >= 100 && st.stress > beforeStress[st.name]) Game.registerBreakdown(st);
+                });
                 effectDesc += '全班受到影响';
             }
         }
@@ -295,5 +306,43 @@ const UI = {
         UI.closeModal('event-system-modal');
         Game.updateUI();
         saveGame();
+    },
+
+    // ===== 一对一辅导弹窗（来自 nanfa 改版） =====
+    showTutorModal() {
+        if (State.isGraduated) { alert("已经毕业啦！"); return; }
+        if (State.money < 4500) { alert("班费不足！需要 ¥4500"); return; }
+        if (State.ap < 3) { alert("AP不足！需要 3 点行动力"); return; }
+        this._tutorStep = 'student';
+        this._tutorIdx = -1;
+        this.renderTutorBody();
+        document.getElementById('tutor-modal').classList.remove('hidden');
+    },
+
+    renderTutorBody() {
+        const body = document.getElementById('tutor-body');
+        if (!body) return;
+        if (this._tutorStep === 'student') {
+            body.innerHTML = State.students.map((s, i) =>
+                `<div style="background:var(--bg-input);padding:8px 10px;border-radius:6px;border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+                    <b style="color:var(--text-primary);">${s.name}</b>
+                    <button style="padding:5px 14px;background:var(--btn-accent);color:white;font-size:.8em;border-radius:4px;border:none;" onclick="UI.tutorPickSubject(${i})">选择</button>
+                </div>`
+            ).join('');
+        } else {
+            const s = State.students[this._tutorIdx];
+            if (!s) { this._tutorStep = 'student'; this.renderTutorBody(); return; }
+            body.innerHTML = `<div style="margin-bottom:6px;color:var(--text-secondary);">辅导 <b style="color:var(--text-primary);">${s.name}</b> 的科目（30倍效率）：</div>` +
+                `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">` +
+                CONFIG.SUBJECTS.map(sub => `<button style="padding:8px 0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:.85em;cursor:pointer;" onclick="Game.doTutor(${this._tutorIdx},'${sub.id}')">${sub.n}</button>`).join('') +
+                `</div><button style="width:100%;padding:8px;background:var(--border-color);color:var(--text-primary);border-radius:6px;border:none;" onclick="UI.tutorPickSubject(-1)">← 返回重选学生</button>`;
+        }
+    },
+
+    tutorPickSubject(i) {
+        if (i < 0) { this._tutorStep = 'student'; this.renderTutorBody(); return; }
+        this._tutorIdx = i;
+        this._tutorStep = 'subject';
+        this.renderTutorBody();
     }
 };

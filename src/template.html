@@ -41,29 +41,41 @@
             </div>
 
             <div style="margin-bottom:15px; padding:12px; border:1px dashed var(--border-color); border-radius:8px; background:var(--bg-card);">
-                <h3 style="text-align:center; margin-top:0; margin-bottom:8px; color:var(--text-primary); font-size:1em;">为你的6名神仙命名：</h3>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
-                    <input type="text" id="name-0" placeholder="Debug618" class="name-input">
-                    <input type="text" id="name-1" placeholder="cyrel" class="name-input">
-                    <input type="text" id="name-2" placeholder="Snoozing_QwQ" class="name-input">
-                    <input type="text" id="name-3" placeholder="lxy_qwq" class="name-input">
-                    <input type="text" id="name-4" placeholder="Groyhj" class="name-input">
-                    <input type="text" id="name-5" placeholder="zenghaoran" class="name-input">
+                <h3 style="text-align:center; margin-top:0; margin-bottom:8px; color:var(--text-primary); font-size:1em;">班级人数</h3>
+                <div id="student-count-selector" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:10px;">
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="2" onclick="Game.selectStudentCount(2)"><h3 style="margin:0; font-size:1em;">2人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="4" onclick="Game.selectStudentCount(4)"><h3 style="margin:0; font-size:1em;">4人</h3></button>
+                    <button type="button" class="mode-btn selected" style="flex:1; min-width:48px; padding:8px;" data-count="6" onclick="Game.selectStudentCount(6)"><h3 style="margin:0; font-size:1em;">6人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="8" onclick="Game.selectStudentCount(8)"><h3 style="margin:0; font-size:1em;">8人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="10" onclick="Game.selectStudentCount(10)"><h3 style="margin:0; font-size:1em;">10人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="12" onclick="Game.selectStudentCount(12)"><h3 style="margin:0; font-size:1em;">12人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="16" onclick="Game.selectStudentCount(16)"><h3 style="margin:0; font-size:1em;">16人</h3></button>
+                    <button type="button" class="mode-btn" style="flex:1; min-width:48px; padding:8px;" data-count="20" onclick="Game.selectStudentCount(20)"><h3 style="margin:0; font-size:1em;">20人</h3></button>
                 </div>
+                <div style="text-align:center; display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <label style="font-size:.8em; color:var(--text-muted);">自定义人数：</label>
+                    <input type="number" id="custom-count" min="2" max="20" placeholder="2-20" style="width:64px; padding:4px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-input); color:var(--text-primary); text-align:center;">
+                    <button type="button" class="btn-mini" onclick="Game.selectCustomCount()">确定</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px; padding:12px; border:1px dashed var(--border-color); border-radius:8px; background:var(--bg-card);">
+                <h3 id="naming-title" style="text-align:center; margin-top:0; margin-bottom:8px; color:var(--text-primary); font-size:1em;">为你的6名神仙命名：</h3>
+                <div id="name-inputs-container" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;"></div>
             </div>
 
             <div class="mode-selector">
                 <div class="mode-btn" data-mode="easy" onclick="Game.selectMode('easy')">
                     <h3 style="color:var(--btn-success);">🟢 简单</h3>
-                    <p>¥10000，+15%效率</p>
+                    <p>初始¥8000 · 每周5AP · +15%效率</p>
                 </div>
                 <div class="mode-btn selected" data-mode="normal" onclick="Game.selectMode('normal')">
                     <h3 style="color:var(--btn-accent);">🔵 普通</h3>
-                    <p>¥5000，-15%效率</p>
+                    <p>初始¥6000 · 每周4AP · -15%效率</p>
                 </div>
                 <div class="mode-btn" data-mode="hard" onclick="Game.selectMode('hard')">
                     <h3 style="color:var(--btn-danger);">🔴 困难</h3>
-                    <p>¥1000，-30%效率</p>
+                    <p>初始¥4000 · 每周3AP · -30%效率</p>
                 </div>
             </div>
 
@@ -147,6 +159,31 @@
                     <button class="btn-mini" onclick="Game.doAction('eff','arts')">文科拓展</button>
                     <button class="btn-mini" onclick="Game.doAction('eff','sci')">理科逻辑</button>
                 </div>
+                <!-- ===== 新增：错题复盘 ===== -->
+                <button class="btn-action" onclick="UI.toggleMenu('menu-review')">
+                    <h5>📒 错题复盘</h5><p>单科2.5倍自习效果</p><span class="cost-tag">¥1500|AP:1</span>
+                </button>
+                <div class="sub-menu" id="menu-review">
+                    <button class="btn-mini" onclick="Game.doAction('review','chi')">语文</button>
+                    <button class="btn-mini" onclick="Game.doAction('review','mat')">数学</button>
+                    <button class="btn-mini" onclick="Game.doAction('review','eng')">英语</button>
+                    <button class="btn-mini" onclick="Game.doAction('review','phy')">物理</button>
+                    <button class="btn-mini" onclick="Game.doAction('review','che')">化学</button>
+                    <button class="btn-mini" onclick="Game.doAction('review','bio')">生物</button>
+                </div>
+                <!-- ===== 新增：专题串讲 ===== -->
+                <button class="btn-action" onclick="UI.toggleMenu('menu-seminar')">
+                    <h5>🧩 专题串讲</h5><p>双科2.2倍自习效果</p><span class="cost-tag">¥2600|AP:2</span>
+                </button>
+                <div class="sub-menu" id="menu-seminar">
+                    <button class="btn-mini" onclick="Game.doAction('seminar','mat_phy')">数理串讲</button>
+                    <button class="btn-mini" onclick="Game.doAction('seminar','chi_eng')">语英串讲</button>
+                    <button class="btn-mini" onclick="Game.doAction('seminar','che_bio')">生化串讲</button>
+                </div>
+                <!-- ===== 新增：一对一辅导 ===== -->
+                <button class="btn-action" onclick="UI.showTutorModal()">
+                    <h5>👤 一对一辅导</h5><p>指定1人单科，30倍学习效率</p><span class="cost-tag">¥4500|AP:3</span>
+                </button>
                 <button class="btn-action" onclick="Game.doMockExam()">
                     <h5>📚 全真模拟考</h5><p>全部科目自习一次，并获得模拟考成绩（不计入档案）</p><span class="cost-tag">¥4000|AP:2</span>
                 </button>
@@ -166,6 +203,22 @@
                 <!-- ===== 新增：看电影 ===== -->
                 <button class="btn-action" onclick="Game.doAction('rest','movie')">
                     <h5>🎬 看电影</h5><p>放松心情 +10</p><span class="cost-tag">¥500|AP:1</span>
+                </button>
+                <!-- ===== 新增：家校沟通 / 班级活动 ===== -->
+                <button class="btn-action" onclick="Game.doAction('rest','home')">
+                    <h5>🤝 家校沟通</h5><p>全班减压+8，心情+5</p><span class="cost-tag">AP:1</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','rally')">
+                    <h5>🎯 班级誓师</h5><p>全班士气+10（略增压力）</p><span class="cost-tag">AP:1</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','group')">
+                    <h5>🧘 团体心理辅导</h5><p>全班压力-15、心情+8</p><span class="cost-tag">¥800|AP:1</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','teambuild')">
+                    <h5>🏀 班级团建</h5><p>全班心情+12、压力-10</p><span class="cost-tag">¥600|AP:2</span>
+                </button>
+                <button class="btn-action" onclick="Game.doAction('rest','lecture')">
+                    <h5>🎓 励志讲座</h5><p>全班心情+8、压力-5</p><span class="cost-tag">¥500|AP:1</span>
                 </button>
                 <!-- ===== 新增：勤工俭学 ===== -->
                 <button class="btn-action" onclick="Game.doAction('work','earn')">
@@ -319,6 +372,56 @@
     </div>
 
     <button class="theme-toggle" onclick="UI.toggleTheme()" id="theme-toggle-btn">🌙</button>
+
+    <!-- ===== 新增：一对一辅导（来自 nanfa 改版） ===== -->
+    <div id="tutor-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2 class="modal-title">👤 一对一辅导</h2>
+            <p style="color:var(--text-secondary);">消耗 <b>¥4500</b> 和 3 点行动力，为<b>一名</b>学生针对性强化单科，获得 <b>30 倍</b>学习效率（辅导后该生压力 <b>+70</b>，累加）。</p>
+            <div id="tutor-body" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
+            <button style="width:100%; padding:12px; background:var(--border-color); color:var(--text-primary);" onclick="UI.closeModal('tutor-modal')">关闭</button>
+        </div>
+    </div>
+    <!-- ===== 新增：跳楼预警（来自 nanfa 改版） ===== -->
+    <div id="breakdown-modal" class="overlay hidden">
+        <div class="modal-box" style="border:2px solid var(--btn-danger);">
+            <h2 class="modal-title" style="color:var(--btn-danger);">💔 心理危机 · 跳楼预警</h2>
+            <p style="font-size:1.05em; line-height:1.6; color:var(--text-secondary); margin-bottom:10px;">
+                <b id="breakdown-name" style="color:var(--text-primary);"></b> 的压力已经顶到 100%，你却还在不停地加压！
+                他/她情绪崩溃，险些从教学楼一跃而下……所幸被及时拦下，但这次教训刻骨铭心。
+            </p>
+            <p style="font-size:.95em; color:var(--btn-danger); margin-bottom:15px;">
+                ⚠️ 后果：该生心情暴跌 30，且留下心理阴影（再次顶满会被记为一次危机）。请立刻为其减压，别在压满的人身上加码！
+            </p>
+            <button style="width:100%; padding:12px; background:var(--btn-danger); color:white; font-size:1em;" onclick="Game.dismissBreakdown()">我记住了，马上减压</button>
+        </div>
+    </div>
+    <!-- ===== 新增：跳楼悲剧（来自 nanfa 改版） ===== -->
+    <div id="jump-modal" class="overlay hidden">
+        <div class="modal-box" style="border:2px solid var(--btn-danger);">
+            <h2 class="modal-title" style="color:var(--btn-danger);">💀 悲剧 · 学生跳楼</h2>
+            <p style="font-size:1.05em; line-height:1.6; color:var(--text-secondary); margin-bottom:10px;">
+                <b id="jump-name" style="color:var(--text-primary);"></b> 长期被高压逼迫，最终承受不住，从教学楼一跃而下……你永远地失去了一名学生。
+            </p>
+            <p style="font-size:.95em; color:var(--btn-danger); margin-bottom:15px;">
+                ⚠️ 本班已失去 <span id="jump-count">1</span> 名学生。若再失去一名，你将面临严重后果！
+            </p>
+            <button style="width:100%; padding:12px; background:var(--btn-danger); color:white; font-size:1em;" onclick="Game.dismissJump()">我明白了……</button>
+        </div>
+    </div>
+    <!-- ===== 新增：被开除（来自 nanfa 改版） ===== -->
+    <div id="fired-modal" class="overlay hidden">
+        <div class="modal-box" style="border:2px solid var(--btn-danger);">
+            <h2 class="modal-title" style="color:var(--btn-danger);">🚫 你被开除了</h2>
+            <p style="font-size:1.05em; line-height:1.6; color:var(--text-secondary); margin-bottom:10px;">
+                连续两名学生因你的高压管理跳楼身亡，校方震怒——你被直接开除，本局游戏结束。
+            </p>
+            <p style="font-size:.95em; color:var(--text-muted); margin-bottom:15px;">
+                教训：关注学生心理健康，别把任何人逼到极限。
+            </p>
+            <button style="width:100%; padding:12px; background:var(--btn-accent); color:white; font-size:1em;" onclick="location.reload()">重新开始</button>
+        </div>
+    </div>
 </div>
 
 <script>

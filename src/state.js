@@ -5,11 +5,13 @@ const DEFAULT_STATE = {
     week: 1, month: 8, year: 2025, money: 0, ap: 3, maxAp: 3,
     diff: 'normal', mode: 'normal', isGraduated: false, isMockExam: false,
     weather: { i: '☀️', n: '晴朗', eff: '' }, season: '秋',
-    fac: { desk: 0, tech: 0, ac: 0, music: 0, psy: 0 },
+    fac: { desk: 0, tech: 0, ac: 0, music: 0, psy: 0, sport: 0, library: 0 },
     tempAlloc: {}, students: [],
     eventCooldowns: {},
     birthdayTriggered: {},
-    monthStartScores: []
+    monthStartScores: [],
+    studentCount: 6,
+    removedCount: 0
 };
 
 // 学生默认形状（与 game.js 中 startGame 生成的学生字段保持一致）
@@ -26,7 +28,8 @@ const DEFAULT_STUDENT = {
     effArts: 1.0,
     effSci: 1.0,
     birthdayMonth: 0,
-    skipStudy: false
+    skipStudy: false,
+    _breakCount: 0
 };
 
 // 初始状态由模板深拷贝而来（两者永不漂移）

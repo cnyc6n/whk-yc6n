@@ -3,14 +3,16 @@
  * 发布脚本：把「改版本号 → 构建 → 同步 → 提交」收成一条命令。
  *
  * 用法：
- *   node release.js             # 用当前 version.txt 构建 + 同步
+ *   node release.js             # 用当前 version.txt 构建 + 同步（发布模式，不含 debug 面板）
  *   node release.js 2.2         # 先把版本号改成 2.2，再构建 + 同步
  *   node release.js --check     # 只校验（不写文件、不改版本号）
+ *   node release.js --dev       # 构建含 debug 面板的开发版（发布默认 --prod）
  *
  * 原理：
  *   版本号单一来源是根目录 version.txt，template.html 里用 {{VERSION}} 占位符，
  *   build.js 构建时自动注入。本脚本只负责「改 version.txt + 调 build.js + 提示」，
  *   避免手动改文件名 / 改 title / 改 h1 漏一处。
+ *   发布默认走 --prod：剔除 debug 面板（源码保留在 src/debug.js，成品不带）。
  */
 
 'use strict';
@@ -24,9 +26,10 @@ const VERSION_FILE = path.join(ROOT, 'version.txt');
 const RELEASE_FILE = path.join(ROOT, 'whk.html');
 
 // ---------- 小工具 ----------
-function runBuild(check = false) {
+function runBuild(check = false, prod = true) {
   const args = ['build.js'];
   if (check) args.push('--check');
+  if (prod) args.push('--prod');
   try {
     execFileSync(process.execPath, args, { stdio: 'inherit', cwd: ROOT });
     return true;
@@ -62,15 +65,20 @@ const argv = process.argv.slice(2);
 
 if (argv.includes('--help') || argv.includes('-h')) {
   console.log(`用法:
-  node release.js            用当前版本构建并同步
+  node release.js            用当前版本构建并同步（发布模式，不含 debug 面板）
   node release.js <版本号>   先改版本号再构建并同步（如 node release.js 2.2）
-  node release.js --check    只校验`);
+  node release.js --check    只校验（发布模式）
+  node release.js --dev      构建含 debug 面板的开发版
+  node release.js --dev 2.2  开发版 + 改版本号`);
   process.exit(0);
 }
 
+// 模式：发布默认 --prod（剔除 debug），--dev 显式保留
+const prod = !argv.includes('--dev');
+
 // --check：只校验
 if (argv.includes('--check')) {
-  const ok = runBuild(true);
+  const ok = runBuild(true, prod);
   process.exit(ok ? 0 : 1);
 }
 
@@ -86,10 +94,10 @@ if (versionArg !== undefined) {
 }
 
 const version = currentVersion();
-console.log(`\n===== 发布 V${version} =====`);
+console.log(`\n===== 发布 V${version}（${prod ? '发布模式，无 debug 面板' : '开发模式，含 debug 面板'}）=====`);
 
 // 构建 + 同步（build.js 会一并把 dist 产物同步到根目录）
-const ok = runBuild(false);
+const ok = runBuild(false, prod);
 if (!ok) {
   console.error('✗ 构建失败，未发布。');
   process.exit(1);

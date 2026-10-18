@@ -13,7 +13,9 @@ const CONFIG = {
         { id: 'tech', n: '教学硬件', lv: ['粉笔黑板', '投影仪', '一体机'], p: [0, 3000, 8000], d: '提高学习效率' },
         { id: 'ac', n: '恒温系统', lv: ['无', '老式空调', '中央空调'], p: [0, 2500, 7000], d: '减免恶劣天气生病' },
         { id: 'music', n: '校园广播网', lv: ['无', '普通广播', '沉浸音响'], p: [0, 2000, 5000], d: '每回合恢复心情' },
-        { id: 'psy', n: '心理宣泄室', lv: ['无', '兼职咨询', '专业咨询'], p: [0, 3000, 8000], d: '每回合大幅降低压力' }
+        { id: 'psy', n: '心理宣泄室', lv: ['无', '兼职咨询', '专业咨询'], p: [0, 3000, 8000], d: '每回合大幅降低压力' },
+        { id: 'sport', n: '运动场', lv: ['无', '简易操场', '标准运动场'], p: [0, 2000, 6000], d: '每回合额外降低压力' },
+        { id: 'library', n: '图书馆', lv: ['无', '班级图书角', '校图书馆'], p: [0, 2500, 7000], d: '提高学习效率' }
     ],
     TALENTS: [
         { id: 't1', n: '解析眼', t: 'pos', cost: 1.2, type: 'sci', d: '理科学习效率+15%' },
@@ -130,6 +132,47 @@ const CONFIG = {
                 s.mastery.mat += 4; 
                 Game.log(`${s.name} 家长介入，网瘾消除。`, "[网瘾]");
             }}
+        ] },
+        // ===== 新增事件（来自 nanfa 改版，ev14-ev21） =====
+        { id: 'ev14', title: '📱 手机风波', desc: '有同学上课频繁刷短视频，注意力明显涣散。', options: [
+            { text: '统一保管手机', effect: (s) => { s.stress += 15; s.mood -= 10; } },
+            { text: '约定手机使用公约', effect: (s) => { s.stress -= 10; s.mood += 5; s.mastery.eng += 2; } },
+            { text: '开展数字素养课 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: (s) => { s.stress -= 5; s.mood += 8; s.mastery.eng += 5; } }
+        ] },
+        { id: 'ev15', title: '🏃 体测动员', desc: '学校组织体能测试，全班既紧张又期待。', options: [
+            { text: '组织晨跑训练', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 5; s.mastery.bio += 2; }); } },
+            { text: '鼓励量力而行', effect: (s) => { s.stress -= 15; s.mood += 5; } },
+            { text: '采购运动装备 (需¥400)', condition: () => State.money >= 400, cost: 400, effect: () => { State.students.forEach(s => { s.stress -= 20; s.mood += 10; s.mastery.phy += 2; }); } }
+        ] },
+        { id: 'ev16', title: '💰 班费疑云', desc: '有同学质疑班费用途不透明，私下议论纷纷。', options: [
+            { text: '公开班费明细', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 5; }); } },
+            { text: '选举生活委员监督', effect: () => { State.students.forEach(s => { s.mood += 3; s.stress -= 5; }); } },
+            { text: '请客澄清误会 (需¥500)', condition: () => State.money >= 500, cost: 500, effect: () => { State.students.forEach(s => { s.mood += 8; s.stress -= 15; }); } }
+        ] },
+        { id: 'ev17', title: '📖 读书分享会', desc: '语文老师倡议办一场读书分享，气氛热烈。', options: [
+            { text: '大力支持', effect: (s) => { s.mood += 15; s.mastery.chi += 6; s.mastery.eng += 6; s.stress -= 5; } },
+            { text: '安排轮值主讲', effect: () => { State.students.forEach(s => { s.mastery.chi += 2; s.mastery.eng += 2; s.mood += 3; }); } },
+            { text: '结合写作训练 (需1AP)', condition: () => State.ap >= 1, costAP: 1, effect: (s) => { s.mastery.chi += 12; s.mood += 10; s.stress -= 5; } }
+        ] },
+        { id: 'ev18', title: '😴 春困秋乏', desc: '季节交替，不少同学上课打瞌睡，效率低下。', options: [
+            { text: '调整作息提醒', effect: () => { State.students.forEach(s => { s.stress -= 8; s.mood += 3; }); } },
+            { text: '安排课间活动', effect: () => { State.students.forEach(s => { s.stress -= 12; s.mood += 5; }); } },
+            { text: '采购提神用品 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: () => { State.students.forEach(s => { s.mood += 8; s.stress -= 10; s.mastery.mat += 1; }); } }
+        ] },
+        { id: 'ev19', title: '🎓 学长回访', desc: '一位考上名校的学长回校分享经验，全班备受鼓舞。', options: [
+            { text: '组织经验交流会', effect: () => { State.students.forEach(s => { s.mood += 10; s.mastery.mat += 2; s.mastery.eng += 2; }); } },
+            { text: '一对一结对指导', effect: (s) => { s.mood += 15; s.mastery.mat += 5; s.mastery.phy += 5; s.stress -= 5; } },
+            { text: '赠送纪念礼物 (需¥300)', condition: () => State.money >= 300, cost: 300, effect: () => { State.students.forEach(s => { s.mood += 12; s.mastery.chi += 2; s.mastery.eng += 2; }); } }
+        ] },
+        { id: 'ev20', title: '⚡ 突发停电', desc: '上课途中突然停电，课堂秩序一度混乱。', options: [
+            { text: '冷静组织自习', effect: (s) => { s.stress += 5; s.mood += 2; s.mastery.chi += 3; } },
+            { text: '改为室外活动', effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 10; }); } },
+            { text: '联系后勤抢修 (需¥200)', condition: () => State.money >= 200, cost: 200, effect: () => { State.students.forEach(s => { s.stress -= 5; s.mood += 5; }); } }
+        ] },
+        { id: 'ev21', title: '🍎 营养计划', desc: '有家长提议改善学生膳食，关注备考体力。', options: [
+            { text: '倡导均衡饮食', effect: () => { State.students.forEach(s => { s.stress -= 10; s.mood += 5; }); } },
+            { text: '发放水果加餐 (需¥400)', condition: () => State.money >= 400, cost: 400, effect: () => { State.students.forEach(s => { s.stress -= 15; s.mood += 10; s.mastery.bio += 2; }); } },
+            { text: '举办健康讲座', effect: (s) => { s.mood += 8; s.stress -= 8; s.mastery.bio += 4; } }
         ] }
     ]
 };

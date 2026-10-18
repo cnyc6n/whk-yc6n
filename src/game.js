@@ -57,20 +57,58 @@ const Game = {
         return mastery;
     },
 
+    // ===== 班级人数选择（来自 nanfa 改版，上限 20） =====
+    selectStudentCount(n) {
+        State.studentCount = n;
+        const cc = document.getElementById('custom-count');
+        if (cc) cc.value = '';
+        document.querySelectorAll('#student-count-selector .mode-btn').forEach(b => b.classList.remove('selected'));
+        const btn = document.querySelector(`#student-count-selector .mode-btn[data-count="${n}"]`);
+        if (btn) btn.classList.add('selected');
+        this.renderNameInputs();
+    },
+
+    selectCustomCount() {
+        const cc = document.getElementById('custom-count');
+        const v = parseInt(cc && cc.value, 10);
+        if (isNaN(v) || v < 2 || v > 20) { alert('请输入 2 到 20 之间的班级人数'); return; }
+        State.studentCount = v;
+        document.querySelectorAll('#student-count-selector .mode-btn').forEach(b => b.classList.remove('selected'));
+        this.renderNameInputs();
+    },
+
+    renderNameInputs() {
+        const container = document.getElementById('name-inputs-container');
+        if (!container) return;
+        const defaultNames = ["Debug618", "cyrel", "Snoozing_QwQ", "lxy_qwq", "Groyhj", "zenghaoran", "Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Mallory", "Niaj", "Olivia", "Peggy"];
+        let html = '';
+        for (let i = 0; i < (State.studentCount || 6); i++) {
+            const ph = defaultNames[i % defaultNames.length];
+            html += `<input type="text" id="name-${i}" placeholder="${ph}" class="name-input">`;
+        }
+        container.innerHTML = html;
+        const title = document.getElementById('naming-title');
+        if (title) title.innerText = `为你的 ${State.studentCount || 6} 名神仙命名：`;
+    },
+
     startGame() {
         const diff = State.mode;
         State.diff = diff;
-        const defaultNames = ["Debug618", "cyrel", "Snoozing_QwQ", "lxy_qwq", "Groyhj", "zenghaoran"];
+        const defaultNames = ["Debug618", "cyrel", "Snoozing_QwQ", "lxy_qwq", "Groyhj", "zenghaoran", "Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Mallory", "Niaj", "Olivia", "Peggy"];
+        const count = State.studentCount || 6;
         const names = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < count; i++) {
             const input = document.getElementById(`name-${i}`).value.trim();
-            names.push(input || defaultNames[i]);
+            names.push(input || defaultNames[i % defaultNames.length]);
         }
 
         let targetScore = 380;
-        if (diff === 'easy') { State.money = 10000; targetScore = 440; }
-        else if (diff === 'normal') { State.money = 5000; targetScore = 380; }
-        else { State.money = 1000; targetScore = 330; }
+        let maxAp = 4;
+        if (diff === 'easy') { State.money = 8000; targetScore = 440; maxAp = 5; }
+        else if (diff === 'normal') { State.money = 6000; targetScore = 380; maxAp = 4; }
+        else { State.money = 4000; targetScore = 330; maxAp = 3; }
+        State.maxAp = maxAp;
+        State.ap = maxAp;
 
         const posPool = CONFIG.TALENTS.filter(t => t.t === 'pos');
         const negPool = CONFIG.TALENTS.filter(t => t.t === 'neg');
@@ -94,7 +132,9 @@ const Game = {
                 effArts: effArts,
                 effSci: effSci,
                 birthdayMonth: 0,
-                skipStudy: false // 新增
+                skipStudy: false, // 新增
+                _breakCount: 0,
+                _brokeDown: false
             };
         });
 
@@ -233,14 +273,19 @@ const Game = {
         }
 
         if (!infiniteAp && State.ap < 1) return alert("AP不足！");
-        let costAP = cat === 'train' ? 2 : (cat === 'intensive' ? 3 : 1);
-        let costMoney = cat === 'train' ? 2000 : cat === 'intensive' ? 3000 : cat === 'test' ? 500 : (cat === 'rest' && sub === 'snack' ? 400 : (cat === 'rest' && sub === 'movie' ? 500 : 0));
+        let costAP = cat === 'train' ? 2 : (cat === 'seminar' ? 2 : (cat === 'intensive' ? 3 : 1));
+        if (cat === 'rest' && sub === 'teambuild') costAP = 2;
+        let costMoney = cat === 'train' ? 2000 : cat === 'intensive' ? 3000 : cat === 'test' ? 500 :
+            cat === 'review' ? 1500 : cat === 'seminar' ? 2600 :
+            (cat === 'rest' && sub === 'snack' ? 400 : (cat === 'rest' && sub === 'movie' ? 500 :
+             (cat === 'rest' && sub === 'group' ? 800 : (cat === 'rest' && sub === 'teambuild' ? 600 :
+             (cat === 'rest' && sub === 'lecture' ? 500 : 0)))));
         if (!infiniteAp && State.ap < costAP) return alert("AP不足！");
         if (State.money < costMoney) return alert("班费不足！");
         if (!infiniteAp) State.ap -= costAP;
         if (costMoney > 0) State.money -= costMoney;
 
-        const techBonus = 1 + (State.fac.tech * 0.15);
+        const techBonus = 1 + (State.fac.tech * 0.15) + ((State.fac.library || 0) * 0.10);
         const diffMod = this.getDiffMultiplier();
 
         State.students.forEach(s => {
@@ -257,7 +302,7 @@ const Game = {
                 const result = this.calculateGain(sub, s.mastery[sub] || 0, baseGain, s);
                 const cap = CONFIG.SUBJECTS.find(x => x.id === sub).cap;
                 s.mastery[sub] = Math.min(cap, (s.mastery[sub] || 0) + result.gain);
-                s.stress = Math.min(100, s.stress + Math.max(2, (cat === 'test' ? 20 : 15) - State.fac.desk * 5));
+                this.addStress(s, Math.max(2, (cat === 'test' ? 20 : 15) - State.fac.desk * 5));
             } else if (cat === 'train') {
                 sub.split('_').forEach(su => {
                     const baseGain = (su === 'chi' ? 1.2 : 2.0) * 1.6 * techBonus * diffMod;
@@ -265,17 +310,36 @@ const Game = {
                     const cap = CONFIG.SUBJECTS.find(x => x.id === su).cap;
                     s.mastery[su] = Math.min(cap, (s.mastery[su] || 0) + result.gain);
                 });
-                s.stress = Math.min(100, s.stress + Math.max(10, 30 - State.fac.desk * 5));
+                this.addStress(s, Math.max(10, 30 - State.fac.desk * 5));
             } else if (cat === 'intensive') {
                 const baseGain = (sub === 'chi' ? 1.2 : 2.0) * 5.0 * techBonus * diffMod;
                 const result = this.calculateGain(sub, s.mastery[sub] || 0, baseGain, s);
                 const cap = CONFIG.SUBJECTS.find(x => x.id === sub).cap;
                 s.mastery[sub] = Math.min(cap, (s.mastery[sub] || 0) + result.gain);
-                s.stress = Math.min(100, s.stress + Math.max(10, 35 - State.fac.desk * 5));
+                this.addStress(s, Math.max(10, 35 - State.fac.desk * 5));
+            } else if (cat === 'review') {
+                const baseGain = (sub === 'chi' ? 1.2 : 2.0) * 2.5 * techBonus * diffMod;
+                const result = this.calculateGain(sub, s.mastery[sub] || 0, baseGain, s);
+                const cap = CONFIG.SUBJECTS.find(x => x.id === sub).cap;
+                s.mastery[sub] = Math.min(cap, (s.mastery[sub] || 0) + result.gain);
+                this.addStress(s, Math.max(5, 18 - State.fac.desk * 5));
+            } else if (cat === 'seminar') {
+                sub.split('_').forEach(su => {
+                    const baseGain = (su === 'chi' ? 1.2 : 2.0) * 2.2 * techBonus * diffMod;
+                    const result = this.calculateGain(su, s.mastery[su] || 0, baseGain, s);
+                    const cap = CONFIG.SUBJECTS.find(x => x.id === su).cap;
+                    s.mastery[su] = Math.min(cap, (s.mastery[su] || 0) + result.gain);
+                });
+                this.addStress(s, Math.max(10, 28 - State.fac.desk * 5));
             } else if (cat === 'rest') {
                 if (sub === 'walk') { s.stress = Math.max(0, s.stress - 20); s.mood = Math.min(100, s.mood + 2); }
                 if (sub === 'snack') { s.stress = Math.max(0, s.stress - 30); s.mood = Math.min(100, s.mood + 5); }
                 if (sub === 'movie') { s.mood = Math.min(100, s.mood + 10); }
+                if (sub === 'home') { s.stress = Math.max(0, s.stress - 8); s.mood = Math.min(100, s.mood + 5); }
+                if (sub === 'rally') { this.addStress(s, 3); s.mood = Math.min(100, s.mood + 10); }
+                if (sub === 'group') { s.stress = Math.max(0, s.stress - 15); s.mood = Math.min(100, s.mood + 8); }
+                if (sub === 'teambuild') { s.mood = Math.min(100, s.mood + 12); s.stress = Math.max(0, s.stress - 10); }
+                if (sub === 'lecture') { s.mood = Math.min(100, s.mood + 8); s.stress = Math.max(0, s.stress - 5); }
             }
         });
 
@@ -286,12 +350,112 @@ const Game = {
         else if (cat === 'test') actionName = '小测';
         else if (cat === 'train') actionName = '专项训练';
         else if (cat === 'intensive') actionName = '🔥特训';
+        else if (cat === 'review') actionName = '错题复盘';
+        else if (cat === 'seminar') actionName = '专题串讲';
         else if (cat === 'rest') {
             if (sub === 'walk') actionName = '散步';
             else if (sub === 'snack') actionName = '小吃';
             else if (sub === 'movie') actionName = '看电影';
+            else if (sub === 'home') actionName = '家校沟通';
+            else if (sub === 'rally') actionName = '班级誓师';
+            else if (sub === 'group') actionName = '团体心理辅导';
+            else if (sub === 'teambuild') actionName = '班级团建';
+            else if (sub === 'lecture') actionName = '励志讲座';
         }
         this.log(`${actionName} ${name ? name.n : ''}`);
+        this.updateUI();
+        saveGame();
+    },
+
+    // ===== 心理危机系统（来自 nanfa 改版） =====
+    // 统一加压力入口：压力已顶满仍被加压 → 触发跳楼预警/悲剧
+    addStress(s, amount) {
+        if (amount <= 0) {
+            s.stress = Math.max(0, Math.min(100, s.stress + amount));
+            if (s.stress < 100) s._brokeDown = false;
+            return;
+        }
+        const before = s.stress;
+        s.stress = Math.min(100, s.stress + amount);
+        if (before < 100) s._brokeDown = false;
+        if (before >= 100 && !s._brokeDown) {
+            this.registerBreakdown(s);
+        }
+    },
+
+    registerBreakdown(s) {
+        if (State.isGraduated) return;
+        if (s._brokeDown) return;
+        s._brokeDown = true;
+        s._breakCount = (s._breakCount || 0) + 1;
+        if (s._breakCount >= 2) {
+            this.studentJump(s);
+        } else {
+            s.mood = Math.max(0, s.mood - 30);
+            this.log(`💔 ${s.name} 压力爆表仍被加压，险些跳楼！心情 -30`, "[危机]");
+            const nm = document.getElementById('breakdown-name');
+            if (nm) nm.innerText = s.name;
+            const m = document.getElementById('breakdown-modal');
+            if (m) m.classList.remove('hidden');
+        }
+    },
+
+    studentJump(s) {
+        if (State.isGraduated) return;
+        State.students = State.students.filter(x => x !== s);
+        State.removedCount = (State.removedCount || 0) + 1;
+        this.log(`💀 悲剧：${s.name} 长期被高压逼迫，从教学楼一跃而下……本班失去一名学生（已失去 ${State.removedCount} 名）。`, "[悲剧]");
+        this.updateUI();
+        saveGame();
+        if (State.removedCount >= 2) {
+            this.gameOverFired();
+        } else {
+            const jn = document.getElementById('jump-name');
+            if (jn) jn.innerText = s.name;
+            const jc = document.getElementById('jump-count');
+            if (jc) jc.innerText = State.removedCount;
+            const m = document.getElementById('jump-modal');
+            if (m) m.classList.remove('hidden');
+        }
+    },
+
+    gameOverFired() {
+        if (State.isGraduated) return;
+        State.isGraduated = true;
+        try { localStorage.removeItem('whk_save_v2'); } catch (e) {}
+        const m = document.getElementById('fired-modal');
+        if (m) m.classList.remove('hidden');
+    },
+
+    dismissBreakdown() {
+        const m = document.getElementById('breakdown-modal');
+        if (m) m.classList.add('hidden');
+    },
+
+    dismissJump() {
+        const m = document.getElementById('jump-modal');
+        if (m) m.classList.add('hidden');
+    },
+
+    // 一对一辅导：指定 1 人单科 30 倍效率（来自 nanfa 改版）
+    doTutor(i, sub) {
+        if (State.isGraduated) return alert("已经毕业啦！");
+        if (State.money < 4500 || State.ap < 3) return alert("资源不足！");
+        const s = State.students[i];
+        if (!s) return;
+        if (s.sickTimer > 0) { alert(`${s.name} 正在病假，无法辅导！`); return; }
+        State.money -= 4500;
+        State.ap -= 3;
+        const techBonus = 1 + (State.fac.tech * 0.15) + ((State.fac.library || 0) * 0.10);
+        const diffMod = this.getDiffMultiplier();
+        const baseGain = (sub === 'chi' ? 1.2 : 2.0) * 30.0 * techBonus * diffMod;
+        const result = this.calculateGain(sub, s.mastery[sub] || 0, baseGain, s);
+        const cap = CONFIG.SUBJECTS.find(x => x.id === sub).cap;
+        s.mastery[sub] = Math.min(cap, (s.mastery[sub] || 0) + result.gain);
+        this.addStress(s, 70);
+        UI.closeModal('tutor-modal');
+        const subName = CONFIG.SUBJECTS.find(x => x.id === sub).n;
+        this.log(`👤 一对一辅导 ${s.name} 的${subName} +${Math.round(result.gain)}`, "[一对一]");
         this.updateUI();
         saveGame();
     },
@@ -574,7 +738,7 @@ const Game = {
         State.money += income;
 
         const moodRegen = State.fac.music * 5;
-        const stressRed = State.fac.psy * 8;
+        const stressRed = State.fac.psy * 8 + (State.fac.sport || 0) * 4;
 
         // ===== 网瘾机制 =====
         // 1. 重置所有学生的 skipStudy

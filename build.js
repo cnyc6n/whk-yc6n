@@ -143,7 +143,7 @@ function lintModule(name, code) {
 }
 
 // ---------- 构建 ----------
-function build({ check = false } = {}) {
+function build({ check = false, prod = false } = {}) {
   const missing = collectFiles();
   if (missing.length) {
     console.error('✗ src/ 缺少文件：\n  - ' + missing.join('\n  - '));
@@ -153,12 +153,16 @@ function build({ check = false } = {}) {
   const problems = [];
   const parts = [];
 
-  // 1. CSS
-  const css = read(path.join(SRC, CSS_FILE));
+  // 1. CSS（prod 模式剥离调试样式块）
+  let css = read(path.join(SRC, CSS_FILE));
+  if (prod) {
+    css = css.replace(/\/\* ===== DEBUG_CSS_BEGIN ===== \*\/[\s\S]*?\/\* ===== DEBUG_CSS_END ===== \*\//g, '');
+  }
   parts.push({ kind: 'css', name: CSS_FILE, code: css });
 
-  // 2. JS（按依赖顺序）
+  // 2. JS（按依赖顺序；prod 模式跳过 debug.js）
   for (const f of JS_ORDER) {
+    if (prod && f === 'debug.js') continue;
     const code = read(path.join(SRC, f));
     const errs = lintModule(f, code);
     if (errs.length) problems.push(...errs);
@@ -183,12 +187,13 @@ function build({ check = false } = {}) {
   // 注意：模块之间只用一个换行相接，与原始单文件的行距保持一致。
   // 加空行会让产物比原文件多出空白（虽然不影响运行，但会污染 diff）。
   // 按 gapBefore 精确复刻原文件的模块间距（避免产物与原文件产生无谓 diff）
-  const blocks = JS_MODULES.map((m) => {
-    const p = parts.find((x) => x.name === m.file);
+  // prod 模式 debug.js 已从 parts 剔除，这里只拼 parts 里真实存在的模块
+  const jsParts = parts.filter((p) => p.kind === 'js');
+  const blocks = jsParts.map((p) => {
     const bar = '='.repeat(60);
-    const header = `// ${bar}${EOL}// ${m.file}${EOL}// ${bar}`;
+    const header = `// ${bar}${EOL}// ${p.name}${EOL}// ${bar}`;
     const body = stripTrailing(safeInline(normalizeEol(p.code, EOL), 'script'));
-    return { text: header + EOL + body, gapBefore: m.gapBefore };
+    return { text: header + EOL + body, gapBefore: (JS_MODULES.find(m => m.file === p.name) || {}).gapBefore === true };
   });
   let joined = blocks[0].text;
   for (let i = 1; i < blocks.length; i++) {
@@ -270,12 +275,14 @@ function watch() {
 // ---------- main ----------
 const argv = process.argv.slice(2);
 if (argv.includes('--help') || argv.includes('-h')) {
-  console.log('用法: node build.js [--check] [--watch]');
+  console.log('用法: node build.js [--check] [--watch] [--prod]');
+  console.log('  --prod   发布模式：剔除 debug 面板（debug.js 与调试样式），产物面向玩家');
   process.exit(0);
 }
+const prod = argv.includes('--prod');
 if (argv.includes('--watch')) {
   watch();
 } else {
-  const ok = build({ check: argv.includes('--check') });
+  const ok = build({ check: argv.includes('--check'), prod });
   process.exit(ok ? 0 : 1);
 }
